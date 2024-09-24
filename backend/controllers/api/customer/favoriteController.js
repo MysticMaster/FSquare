@@ -23,7 +23,7 @@ const createOrDeleteFavorite = async (req, res) => {
         }).select('_id').lean();
         if (existingFavorite) {
             await Favorite.findByIdAndDelete(existingFavorite._id);
-            return res.status(successResponse.code).json(responseBody(successResponse.status, 'Removed favorite this shoe', {}));
+            return res.status(successResponse.code).json(responseBody(successResponse.status, 'Removed favorite this shoe', {id: existingFavorite._id}));
         }
         const favorite = await Favorite.create({
             customer: userId,

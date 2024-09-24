@@ -21,6 +21,7 @@ const getShoes = async (req, res) => {
     const customerId = req.user.id;
 
     try {
+        console.log('ccc:',searchQuery)
         const query = {
             isActive: true,
             name: {$regex: searchQuery, $options: 'i'}
@@ -73,9 +74,9 @@ const getShoes = async (req, res) => {
             const shoeData = {
                 _id: shoe._id,
                 name: shoe.name,
-                minPrice: priceRange.minPrice,
-                maxPrice: priceRange.maxPrice,
-                rating: reviewInfo ? reviewInfo.avgRating.toFixed(1) : null,
+                minPrice: priceRange ? priceRange.minPrice : 0,
+                maxPrice: priceRange ? priceRange.maxPrice : 0,
+                rating: reviewInfo ? reviewInfo.avgRating.toFixed(1) : 0,
                 reviewCount: reviewInfo ? reviewInfo.reviewCount : 0,
                 isFavorite: favoriteShoesIds.includes(shoe._id.toString())
             };
@@ -97,7 +98,7 @@ const getShoes = async (req, res) => {
 }
 
 const getShoesById = async (req, res) => {
-    const customerId = req.user.d;
+    const customerId = req.user.d; // Kiểm tra giá trị customerId, có thể cần điều chỉnh nếu không đúng
     try {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail brand category name describe description')
@@ -108,7 +109,7 @@ const getShoesById = async (req, res) => {
         if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found', {}));
 
         const reviewData = await ShoesReview.aggregate([
-            {$match: {shoes: shoes._id, isActive: true}},
+            {$match: {shoes: {$in: [shoes._id]}, isActive: true}},
             {
                 $group: {
                     _id: "$shoes",
@@ -117,13 +118,6 @@ const getShoesById = async (req, res) => {
                 }
             }
         ]);
-
-        const ratingInfo = reviewData.length > 0
-            ? {
-                avgRating: reviewData[0].avgRating.toFixed(1),
-                reviewCount: reviewData[0].reviewCount
-            }
-            : {avgRating: null, reviewCount: 0};
 
         const isFavorite = await Favorite.exists({customer: customerId, shoes: shoes._id});
 
@@ -134,12 +128,14 @@ const getShoesById = async (req, res) => {
             category: shoes.category.name,
             describe: shoes.describe,
             description: shoes.description,
-            rating: ratingInfo.avgRating,
-            reviewCount: ratingInfo.reviewCount,
+            rating: reviewData.length > 0 ? reviewData[0].avgRating.toFixed(1) : 0, // Kiểm tra reviewData
+            reviewCount: reviewData.length > 0 ? reviewData[0].reviewCount : 0, // Kiểm tra reviewData
             isFavorite: !!isFavorite
         };
 
-        if (shoes.thumbnail) shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoes.thumbnail, maxAge);
+        if (shoes.thumbnail) {
+            shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoes.thumbnail, maxAge);
+        }
 
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Get Shoes by ID Successful', {shoes: shoeData}));
@@ -149,6 +145,7 @@ const getShoesById = async (req, res) => {
             .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
     }
 }
+
 
 export default {
     getShoes,
