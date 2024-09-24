@@ -40,6 +40,13 @@ const AdminSchema = mongoose.Schema({
         enum: ["superAdmin", "salesperson"],
         default: "salesperson"
     },
+    lastLogin: {
+        type: Number,
+        default: 0
+    },
+    fcmToken: {
+        type: String
+    },
     isActive: {
         type: Boolean,
         default: true

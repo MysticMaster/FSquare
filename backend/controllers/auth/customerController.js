@@ -1,4 +1,3 @@
-import Account from "../../models/accountModel.js";
 import Customer from "../../models/customerModel.js";
 import {generateToken} from "../../middleware/authMiddleware.js";
 import {responseBody, generateOTP, generateString} from "../../utils/generate.js";
@@ -19,43 +18,50 @@ const authentication = async (req, res) => {
     if (!email) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Email is required', {}));
 
     try {
-        const account = await Account.findOne({email: email})
-            .select('_id isActive').lean();
+        const customer = await Customer.findOne({email})
+            .select('_id isActive')
+            .lean();
 
-        if (!account) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Email not registered', {}));
-        if (account.isActive === false) return res.status(forbiddenResponse.code).json(responseBody(forbiddenResponse.status, 'Account has been disabled', {}));
+        if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Email not registered', {}));
+        if (customer.isActive === false) return res.status(forbiddenResponse.code).json(responseBody(forbiddenResponse.status, 'Account has been disabled', {}));
+
+        const existingOTP = await getOTPFromRedis(email);
+        if (existingOTP) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'OTP request already exists', {}));
 
         const otp = generateOTP(4);
         await putOTPToRedis(email, otp);
         await sendOTP(email, 'Mã xác nhận đăng nhập tài khoản', otp);
-        res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'OTP sent successfully', {}));
+
+        res.status(successResponse.code).json(responseBody(successResponse.status, 'OTP sent successfully', {}));
     } catch (error) {
         console.log(`authentication ${error.message}`);
-        res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+        res.status(internalServerErrorResponse.code).json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
     }
-}
+};
 
 const registration = async (req, res) => {
     const {email} = req.body;
     if (!email) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Email is required', {}));
+
     try {
-        const account = await Account.findOne({email: email})
-            .select('_id').lean();
-        if (account) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Email already in use', {}));
+        const customer = await Customer.findOne({email})
+            .select('_id')
+            .lean();
+        if (customer) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Email already in use', {}));
+
+        const existingOTP = await getOTPFromRedis(email);
+        if (existingOTP) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'OTP request already exists', {}));
 
         const otp = generateOTP(4);
         await putOTPToRedis(email, otp);
         await sendOTP(email, 'Mã xác nhận đăng ký tài khoản', otp);
-        res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'OTP sent successfully', {}));
+
+        res.status(successResponse.code).json(responseBody(successResponse.status, 'OTP sent successfully', {}));
     } catch (error) {
         console.log(`registration ${error.message}`);
-        res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+        res.status(internalServerErrorResponse.code).json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
     }
-}
+};
 
 const verification = async (req, res) => {
     const {otp, email, type, fcmToken} = req.body;
@@ -71,42 +77,35 @@ const verification = async (req, res) => {
         await deleteOTPFromRedis(email);
 
         if (type === 'login') {
-            const account = await Account.findOne({email: email})
-                .select('accountId fcmToken');
-            const customer = await Customer.findOne({accountId: account.accountId})
-                .select('_id role');
+            const customer = await Customer.findOne({email})
+                .select('_id role fcmToken lastLogin');
 
-            if (!customer) {
-                return res.status(notFoundResponse.code)
-                    .json(responseBody(notFoundResponse.status, 'Customer not found', {}));
-            }
+            if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Customer not found', {}));
+
+            customer.lastLogin += 1;
+
             const token = await generateToken(customer, maxAge);
-            if (fcmToken) {
-                account.fcmToken = fcmToken;
-                await account.save();
-            }
-            return res.status(successResponse.code)
-                .json(responseBody(successResponse.status, 'Login successfully', {token: token}));
+            if (fcmToken && customer.fcmToken !== fcmToken) customer.fcmToken = fcmToken;
+            await customer.save();
+            return res.status(successResponse.code).json(responseBody(successResponse.status, 'Login successfully', {token}));
         }
 
         if (type === 'signup') {
-            const account = await Account.create({
-                accountId: generateString(16),
-                email: email,
-                fcmToken: fcmToken || null
+            const customer = await Customer.create({
+                email,
+                fcmToken: fcmToken || null,
+                lastLogin: 0
             });
-            const customer = await Customer.create({accountId: account.accountId});
+
             const token = await generateToken(customer, maxAge);
-            return res.status(createdResponse.code)
-                .json(responseBody(createdResponse.status, 'Register successfully', {token: token}));
+            return res.status(createdResponse.code).json(responseBody(createdResponse.status, 'Register successfully', {token}));
         }
 
     } catch (error) {
         console.log(`verification ${error.message}`);
-        res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+        res.status(internalServerErrorResponse.code).json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
     }
-}
+};
 
 export default {
     authentication,

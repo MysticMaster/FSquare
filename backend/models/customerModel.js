@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 
 const CustomerSchema = new mongoose.Schema({
-    accountId: {
-        type: String,
-        required: true
-    },
     firstName: {
         type: String,
         required: true,
@@ -14,6 +10,11 @@ const CustomerSchema = new mongoose.Schema({
         type: String,
         required: true,
         default: "Your Last Name"
+    },
+    email: {
+        type: String,
+        unique: true,
+        required: true
     },
     avatar: {
         type: String
@@ -41,6 +42,18 @@ const CustomerSchema = new mongoose.Schema({
     role: {
         type: String,
         default: "customer"
+    },
+    fcmToken: {
+        type: String,
+        required: false
+    },
+    lastLogin: {
+        type: Number,
+        default: 0
+    },
+    pinCode: {
+        type: String,
+        required: false
     },
     isActive: {
         type: Boolean,
