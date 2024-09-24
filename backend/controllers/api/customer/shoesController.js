@@ -1,0 +1,156 @@
+import Shoes from "../../../models/shoesModel.js";
+import {responseBody} from "../../../utils/generate.js";
+import {
+    successResponse,
+    internalServerErrorResponse, notFoundResponse
+} from "../../../utils/httpStatusCode.js";
+import {getSingleImage} from "../../../utils/media.js";
+import {shoesDir, thumbnailDir} from "../../../utils/directory.js";
+import Classification from "../../../models/classificationModel.js";
+import ShoesReview from "../../../models/shoesReview.js";
+import Favorite from "../../../models/favoriteModel.js";
+
+const maxAge = 86400;
+
+const getShoes = async (req, res) => {
+    const sizePage = parseInt(req.query.size, 10) || 6;
+    const currentPage = parseInt(req.query.page, 10) || 1;
+    const searchQuery = req.query.search || '';
+    const brandId = req.query.brand || '';
+    const categoryId = req.query.category || '';
+    const customerId = req.user.id;
+
+    try {
+        const query = {
+            isActive: true,
+            name: {$regex: searchQuery, $options: 'i'}
+        };
+        if (brandId) query.brand = brandId;
+        if (categoryId) query.category = categoryId;
+        const totalShoes = await Shoes.countDocuments(query);
+        const totalPages = Math.ceil(totalShoes / sizePage);
+
+        const shoes = await Shoes.find(query)
+            .sort({createdAt: -1})
+            .skip((currentPage - 1) * sizePage)
+            .limit(sizePage)
+            .select('_id thumbnail name')
+            .lean();
+
+        const shoesIds = shoes.map(shoe => shoe._id);
+        const priceRanges = await Classification.aggregate([
+            {$match: {shoes: {$in: shoesIds}, isActive: true}},
+            {
+                $group: {
+                    _id: "$shoes",
+                    minPrice: {$min: "$price"},
+                    maxPrice: {$max: "$price"}
+                }
+            }
+        ]);
+
+        const reviewData = await ShoesReview.aggregate([
+            {$match: {shoes: {$in: shoesIds}, isActive: true}},
+            {
+                $group: {
+                    _id: "$shoes",
+                    avgRating: {$avg: "$rating"},
+                    reviewCount: {$sum: 1}
+                }
+            }
+        ]);
+
+        const favoriteData = await Favorite.find({customer: customerId, shoes: {$in: shoesIds}})
+            .select('shoes')
+            .lean();
+
+        const favoriteShoesIds = favoriteData.map(fav => fav.shoes.toString());
+
+        const shoesData = await Promise.all(shoes.map(async (shoe) => {
+            const priceRange = priceRanges.find(pr => pr._id.equals(shoe._id));
+            const reviewInfo = reviewData.find(rd => rd._id.equals(shoe._id));
+
+            const shoeData = {
+                _id: shoe._id,
+                name: shoe.name,
+                minPrice: priceRange.minPrice,
+                maxPrice: priceRange.maxPrice,
+                rating: reviewInfo ? reviewInfo.avgRating.toFixed(1) : null,
+                reviewCount: reviewInfo ? reviewInfo.reviewCount : 0,
+                isFavorite: favoriteShoesIds.includes(shoe._id.toString())
+            };
+
+            if (shoe.thumbnail) shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoe.thumbnail, maxAge);
+            return shoeData;
+        }));
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status, 'Get Shoes Successful', {
+                shoes: shoesData,
+                currentPage: currentPage,
+                totalPages: totalPages
+            }));
+    } catch (error) {
+        console.log(`getShoes ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+    }
+}
+
+const getShoesById = async (req, res) => {
+    const customerId = req.user.d;
+    try {
+        const shoes = await Shoes.findById(req.params.id)
+            .select('_id thumbnail brand category name describe description')
+            .populate('brand', 'name')
+            .populate('category', 'name')
+            .lean();
+
+        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found', {}));
+
+        const reviewData = await ShoesReview.aggregate([
+            {$match: {shoes: shoes._id, isActive: true}},
+            {
+                $group: {
+                    _id: "$shoes",
+                    avgRating: {$avg: "$rating"},
+                    reviewCount: {$sum: 1}
+                }
+            }
+        ]);
+
+        const ratingInfo = reviewData.length > 0
+            ? {
+                avgRating: reviewData[0].avgRating.toFixed(1),
+                reviewCount: reviewData[0].reviewCount
+            }
+            : {avgRating: null, reviewCount: 0};
+
+        const isFavorite = await Favorite.exists({customer: customerId, shoes: shoes._id});
+
+        const shoeData = {
+            _id: shoes._id,
+            name: shoes.name,
+            brand: shoes.brand.name,
+            category: shoes.category.name,
+            describe: shoes.describe,
+            description: shoes.description,
+            rating: ratingInfo.avgRating,
+            reviewCount: ratingInfo.reviewCount,
+            isFavorite: !!isFavorite
+        };
+
+        if (shoes.thumbnail) shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoes.thumbnail, maxAge);
+
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status, 'Get Shoes by ID Successful', {shoes: shoeData}));
+    } catch (error) {
+        console.log(`getShoesById ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+    }
+}
+
+export default {
+    getShoes,
+    getShoesById
+}

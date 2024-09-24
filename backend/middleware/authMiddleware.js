@@ -1,0 +1,46 @@
+import jwt from 'jsonwebtoken';
+import dotenv from "dotenv";
+import {responseBody} from "../utils/generate.js";
+import {unauthorizedResponse, forbiddenResponse, internalServerErrorResponse} from "../utils/httpStatusCode.js";
+
+dotenv.config();
+
+const generateToken = async (user, maxAge) => {
+    const payload = {
+        id: user._id.toString(),
+        role: user.role,
+    }
+
+    if (user.authority) payload.authority = user.authority
+    try {
+        return jwt.sign(payload, process.env.SECRET_KEY, {expiresIn: maxAge});
+    } catch (error) {
+        console.error('Error creating JWT token:', error);
+        throw error;
+    }
+}
+
+const verifyToken = async (token) => {
+    try {
+        return jwt.verify(token, process.env.SECRET_KEY);
+    } catch (error) {
+        throw error;
+    }
+};
+
+const authentication = (requiredRole) => async (req, res, next) => {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) return res.status(unauthorizedResponse.code).send(responseBody(unauthorizedResponse.status, 'No token provided', {}));
+    try {
+        const decodedToken = await verifyToken(token);
+        if (requiredRole && decodedToken.role !== requiredRole) return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied', {}));
+        req.user = decodedToken;
+        next();
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') return res.status(unauthorizedResponse.code).send(responseBody(unauthorizedResponse.status, 'Token has expired', {}));
+        res.status(internalServerErrorResponse.code)
+            .send(responseBody(internalServerErrorResponse.status, 'An unspecified exception occurred.', {}));
+    }
+};
+
+export {generateToken, authentication};
