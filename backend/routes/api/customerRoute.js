@@ -35,6 +35,7 @@ router.delete('/favorites/:id', favoriteController.deleteFavorite);
 router.post('/bags', bagController.createBag);
 router.get('/bags', bagController.getBags);
 router.patch('/bags/:id',bagController.updateBagQuantity);
-router.delete('/bags/:id',bagController.deleteBag);
+router.delete('/bags',bagController.deleteBags);
+router.delete('/bags/:id',bagController.deleteBagById);
 
 export default router;

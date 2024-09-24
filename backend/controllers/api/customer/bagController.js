@@ -4,8 +4,7 @@ import {
     internalServerErrorResponse, notFoundResponse, badRequestResponse
 } from "../../../utils/httpStatusCode.js";
 import {responseBody} from "../../../utils/generate.js";
-import Classification from "../../../models/classificationModel.js";
-import Shoes from "../../../models/shoesModel.js";
+import Size from "../../../models/sizeModel.js";
 import {getSingleImage} from "../../../utils/media.js";
 import {classificationDir, thumbnailDir} from "../../../utils/directory.js";
 
@@ -17,18 +16,29 @@ const createBag = async (req, res) => {
     if (!size || !quantity) return res.status(badRequestResponse.code)
         .json(responseBody(badRequestResponse.status, 'All fields are required', {}));
     try {
+        const sizeData = await Size.findById(size).select('quantity').lean();
+
+        if (!sizeData) return res.status(notFoundResponse.code)
+            .json(responseBody(notFoundResponse.status, 'Size not found', {}));
+
         const existingBag = await Bag.findOne({
             customer: userId,
             size: size
         }).select('_id quantity');
 
         if (existingBag) {
-            existingBag.quantity += quantity;
+            const newQuantity = existingBag.quantity + quantity;
+            if (newQuantity > sizeData.quantity) return res.status(badRequestResponse.code)
+                .json(responseBody(badRequestResponse.status, 'Quantity exceeds available size stock', {}));
+            existingBag.quantity = newQuantity;
             await existingBag.save();
 
             return res.status(successResponse.code)
                 .json(responseBody(successResponse.status, 'Bag updated successfully', {bag: existingBag}));
         }
+
+        if (quantity > sizeData.quantity) return res.status(badRequestResponse.code)
+            .json(responseBody(badRequestResponse.status, 'Quantity exceeds available size stock', {}));
 
         const newBag = await Bag.create({
             customer: userId,
@@ -93,8 +103,12 @@ const getBags = async (req, res) => {
 
 const updateBagQuantity = async (req, res) => {
     const {action} = req.body;
-    if (!action) return res.status(badRequestResponse.code)
-        .json(responseBody(badRequestResponse.status, 'Action action', {}));
+
+    if (!action) {
+        return res.status(badRequestResponse.code)
+            .json(responseBody(badRequestResponse.status, 'Action is required', {}));
+    }
+
     try {
         const bag = await Bag.findById(req.params.id).populate({
             path: 'size',
@@ -106,9 +120,14 @@ const updateBagQuantity = async (req, res) => {
         });
 
         if (!bag) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Bag not found', {}));
+        const sizeData = await Size.findById(bag.size._id).select('quantity');
+        if (!sizeData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found', {}));
 
         if (action === "increase") {
+            if (bag.quantity + 1 > sizeData.quantity) return res.status(badRequestResponse.code)
+                .json(responseBody(badRequestResponse.status, 'Quantity exceeds available size stock', {}));
             bag.quantity += 1;
+
         } else if (action === "decrease") {
             bag.quantity -= 1;
 
@@ -131,7 +150,6 @@ const updateBagQuantity = async (req, res) => {
 
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Bag quantity updated', {bag: bagData}));
-
     } catch (error) {
         console.log(`updateBagQuantity ${error.message}`);
         res.status(internalServerErrorResponse.code)
@@ -139,7 +157,20 @@ const updateBagQuantity = async (req, res) => {
     }
 };
 
-const deleteBag = async (req, res) => {
+const deleteBags = async (req, res) => {
+    const userId = req.user._id;
+    try {
+        await Bag.deleteMany({customer: userId});
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status, 'Bags deleted successfully', {}));
+    } catch (error) {
+        console.log(`deleteBags ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+    }
+}
+
+const deleteBagById = async (req, res) => {
     try {
         const bagId = req.params.id;
         const deleteBag = await Bag.findByIdAndDelete(bagId);
@@ -157,6 +188,7 @@ export default {
     createBag,
     getBags,
     updateBagQuantity,
-    deleteBag
+    deleteBags,
+    deleteBagById
 }
 
