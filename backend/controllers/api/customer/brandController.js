@@ -35,16 +35,28 @@ const getBrands = async (req, res) => {
             return brandData;
         }));
 
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Brands Successful', {
-                brands: brandsData,
-                currentPage: currentPage,
-                totalPages: totalPages
-            }));
+            .json(responseBody(successResponse.status, 'Get Brands Successful',
+                brandsData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalBrands,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getBrands ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 };
 

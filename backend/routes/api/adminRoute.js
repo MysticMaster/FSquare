@@ -14,36 +14,37 @@ const upload = multer({
     limits: {fileSize: 25 * 1024 * 1024}
 });
 
-router.post('/admins', upload.single('file'), adminController.createAdmin);
+router.post('/v1/admins', upload.single('file'), adminController.createAdmin);
+router.get('/v1/admins/profile', adminController.getProfile);
 
-router.post('/brands', upload.single('file'), brandController.createBrand);
-router.get('/brands', brandController.getBrands);
-router.get('/brands/:id', brandController.getBrandById);
-router.patch('/brands/:id', upload.single('file'), brandController.updateBrand);
+router.post('/v1/brands', upload.single('file'), brandController.createBrand);
+router.get('/v1/brands', brandController.getBrands);
+router.get('/v1/brands/:id', brandController.getBrandById);
+router.patch('/v1/brands/:id', upload.single('file'), brandController.updateBrand);
 
-router.post('/categories', upload.single('file'), categoryController.createCategory);
-router.get('/categories', categoryController.getCategories);
-router.get('/categories/:id', categoryController.getCategoryById);
-router.patch('/categories/:id', upload.single('file'), categoryController.updateCategory);
+router.post('/v1/categories', upload.single('file'), categoryController.createCategory);
+router.get('/v1/categories', categoryController.getCategories);
+router.get('/v1/categories/:id', categoryController.getCategoryById);
+router.patch('/v1/categories/:id', upload.single('file'), categoryController.updateCategory);
 
-router.post('/shoes', upload.single('file'), shoesController.createShoes);
-router.get('/shoes', shoesController.getShoes);
-router.get('/shoes/:id', shoesController.getShoesById);
-router.patch('/shoes/:id', upload.single('file'), shoesController.updateShoes);
+router.post('/v1/shoes', upload.single('file'), shoesController.createShoes);
+router.get('/v1/shoes', shoesController.getShoes);
+router.get('/v1/shoes/:id', shoesController.getShoesById);
+router.patch('/v1/shoes/:id', upload.single('file'), shoesController.updateShoes);
 
-router.post('/classifications', upload.fields([
+router.post('/v1/classifications', upload.fields([
     {name: 'file', maxCount: 1},
     {name: 'files', maxCount: 6}
 ]), classificationController.createClassification);
-router.get('/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
-router.get('/classifications/:id', classificationController.getClassificationById);
-router.patch('/classifications/:id', classificationController.updateClassification);
-router.patch('/classifications/:id/media', upload.array('files'), classificationController.addMedias);
-router.delete('/classifications/:id/media', classificationController.deleteMedia);
+router.get('/v1/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
+router.get('/v1/classifications/:id', classificationController.getClassificationById);
+router.patch('/v1/classifications/:id', classificationController.updateClassification);
+router.patch('/v1/classifications/media/:id', upload.array('files'), classificationController.addMedias);
+router.delete('/v1/classifications/media/:id', classificationController.deleteMedia);
 
-router.post('/sizes',sizeController.createSize);
-router.get('/sizes/classifications/:id',sizeController.getSizeByIdClassification);
-router.get('/sizes/:id', sizeController.getSizeById);
-router.patch('/sizes/:id', sizeController.updateSize);
+router.post('/v1/sizes', sizeController.createSize);
+router.get('/v1/sizes/classifications/:id', sizeController.getSizeByIdClassification);
+router.get('/v1/sizes/:id', sizeController.getSizeById);
+router.patch('/v1/sizes/:id', sizeController.updateSize);
 
 export default router;

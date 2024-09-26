@@ -18,16 +18,16 @@ const maxAge = 86400;
 
 const createShoes = async (req, res) => {
     const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin', {}));
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {brand, category, name, describe, description} = req.body;
-    if (!brand || !category || !name || !describe) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required', {}));
+    if (!brand || !category || !name || !describe) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
 
     try {
         const existingShoes = await Shoes.findOne({
             name: new RegExp(`^${name}$`, 'i'),
             brand: brand, category: category
         });
-        if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand and category', {}));
+        if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand and category'));
 
         const shoes = new Shoes({
             brand: brand,
@@ -39,11 +39,14 @@ const createShoes = async (req, res) => {
         if (req.file) shoes.thumbnail = await putSingleImage(`${shoesDir}/${thumbnailDir}`, req.file);
         await shoes.save();
         res.status(createdResponse.code)
-            .json(responseBody(createdResponse.status, 'A new shoes has been created', {shoes: shoes}));
+            .json(responseBody(createdResponse.status,
+                'A new shoes has been created',
+                shoes
+            ));
     } catch (error) {
         console.log(`createShoes ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
@@ -87,16 +90,30 @@ const getShoes = async (req, res) => {
             if (shoeData.thumbnail) shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoeData.thumbnail, maxAge);
             return shoeData;
         }));
+
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Shoes Successful', {
-                shoes: shoesData,
-                currentPage: currentPage,
-                totalPages: totalPages
-            }));
+            .json(responseBody(successResponse.status,
+                'Get Shoes Successful',
+                shoesData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalShoes,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getShoes ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
@@ -105,33 +122,36 @@ const getShoesById = async (req, res) => {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail name describe description createdAt isActive brand category')
             .lean();
-        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found', {}));
+        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
         const shoesData = {...shoes};
         if (shoesData.thumbnail) shoesData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoesData.thumbnail, maxAge);
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Shoes Successful', {shoes: shoesData}));
+            .json(responseBody(successResponse.status,
+                'Get Shoes Successful',
+                shoesData
+            ));
     } catch (error) {
         console.log(`getShoesById ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
 const updateShoes = async (req, res) => {
     const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin', {}));
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {name, brand, category, describe, description, isActive} = req.body;
     try {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail name brand category describe description isActive');
-        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found', {}));
+        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
 
         if (name && name !== '') {
             const existingShoes = await Shoes.findOne({
                 name: new RegExp(`^${name}$`, 'i'),
                 brand: shoes.brand, category: shoes.category
             });
-            if (existingShoes && existingShoes.name !== shoes.name) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand and category', {}));
+            if (existingShoes && existingShoes.name !== shoes.name) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand and category'));
             shoes.name = name;
         }
         if (brand) {
@@ -139,7 +159,7 @@ const updateShoes = async (req, res) => {
                 name: shoes.name,
                 brand: brand, category: shoes.category
             });
-            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand', {}));
+            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand'));
             shoes.brand = brand;
         }
         if (category) {
@@ -147,7 +167,7 @@ const updateShoes = async (req, res) => {
                 name: shoes.name,
                 brand: shoes.brand, category: category
             });
-            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this category', {}));
+            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this category'));
             shoes.category = category
         }
         if (describe) shoes.describe = describe;
@@ -162,11 +182,14 @@ const updateShoes = async (req, res) => {
         }
         await shoes.save();
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Update Shoes Successful', {shoes: shoes}));
+            .json(responseBody(successResponse.status,
+                'Update Shoes Successful',
+                shoes
+            ));
     } catch (error) {
         console.log(`updateShoes ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 

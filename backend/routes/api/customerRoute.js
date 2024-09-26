@@ -15,27 +15,27 @@ const upload = multer({
     limits: {fileSize: 25 * 1024 * 1024}
 });
 
-router.get('/brands', brandController.getBrands);
+router.get('/v1/brands', brandController.getBrands);
 
-router.get('/categories', categoryController.getCategories);
+router.get('/v1/categories', categoryController.getCategories);
 
-router.get('/shoes', shoesController.getShoes);
-router.get('/shoes/:id', shoesController.getShoesById);
+router.get('/v1/shoes', shoesController.getShoes);
+router.get('/v1/shoes/:id', shoesController.getShoesById);
 
-router.get('/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
-router.get('/classifications/:id', classificationController.getClassificationById);
+router.get('/v1/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
+router.get('/v1/classifications/:id', classificationController.getClassificationById);
 
-router.get('/sizes/classifications/:id', sizeController.getSizesByIdClassification);
-router.get('/sizes/:id', sizeController.getSizeById);
+router.get('/v1/sizes/classifications/:id', sizeController.getSizesByIdClassification);
+router.get('/v1/sizes/:id', sizeController.getSizeById);
 
-router.post('/favorites', favoriteController.createOrDeleteFavorite);
-router.get('/favorites', favoriteController.getFavorites);
-router.delete('/favorites/:id', favoriteController.deleteFavorite);
+router.post('/v1/favorites', favoriteController.createOrDeleteFavorite);
+router.get('/v1/favorites', favoriteController.getFavorites);
+router.delete('/v1/favorites/:id', favoriteController.deleteFavorite);
 
-router.post('/bags', bagController.createBag);
-router.get('/bags', bagController.getBags);
-router.patch('/bags/:id',bagController.updateBagQuantity);
-router.delete('/bags',bagController.deleteBags);
-router.delete('/bags/:id',bagController.deleteBagById);
+router.post('/v1/bags', bagController.createBag);
+router.get('/v1/bags', bagController.getBags);
+router.patch('/v1/bags/:id', bagController.updateBagQuantity);
+router.delete('/v1/bags', bagController.deleteBags);
+router.delete('/v1/bags/:id', bagController.deleteBagById);
 
 export default router;

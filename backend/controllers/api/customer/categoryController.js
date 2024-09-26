@@ -35,16 +35,29 @@ const getCategories = async (req, res) => {
             return category;
         }));
 
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Categories Successful', {
-                categories: categoriesData,
-                currentPage: currentPage,
-                totalPages: totalPages
-            }));
+            .json(responseBody(successResponse.status,
+                'Get Categories Successful',
+                categoriesData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalCategories,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getCategories ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 };
 

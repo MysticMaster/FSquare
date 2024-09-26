@@ -16,10 +16,10 @@ const maxAge = 86400;
 
 const createBrand = async (req, res) => {
     const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin', {}));
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
 
     const {name} = req.body;
-    if (!name) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Name is required', {}));
+    if (!name) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Name is required'));
 
     try {
         const existingBrand = await Brand.findOne({
@@ -31,11 +31,11 @@ const createBrand = async (req, res) => {
         if (req.file) brand.thumbnail = await putSingleImage(`${brandDir}/${thumbnailDir}`, req.file);
         await brand.save();
         res.status(createdResponse.code)
-            .json(responseBody(createdResponse.status, 'A new brand has been created', {brand: brand}));
+            .json(responseBody(createdResponse.status, 'A new brand has been created', brand));
     } catch (error) {
         console.log(`createBrand ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
@@ -74,16 +74,29 @@ const getBrands = async (req, res) => {
             return brandData;
         }));
 
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Brands Successful', {
-                brands: brandsData,
-                currentPage: currentPage,
-                totalPages: totalPages
-            }));
+            .json(responseBody(successResponse.status,
+                'Get Brands Successful',
+                brandsData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalBrands,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getBrands ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 };
 
@@ -92,26 +105,29 @@ const getBrandById = async (req, res) => {
         const brand = await Brand.findById(req.params.id)
             .select('_id thumbnail name createdAt isActive').lean();
 
-        if (!brand) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found', {}));
+        if (!brand) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
         const brandData = {...brand}
         if (brandData.thumbnail) brandData.thumbnail = await getSingleImage(`${brandDir}/${thumbnailDir}`, brandData.thumbnail, maxAge);
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Brand Successful', {brand: brandData}));
+            .json(responseBody(successResponse.status,
+                'Get Brand Successful',
+                brandData
+            ));
     } catch (error) {
         console.log(`getBrandById ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
 const updateBrand = async (req, res) => {
     const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin', {}));
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {name, isActive} = req.body;
     try {
         const brand = await Brand.findById(req.params.id)
             .select('_id thumbnail name isActive');
-        if (!brand) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found', {}));
+        if (!brand) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
 
         if (name && name !== '') {
             const existingBrand = await Brand.findOne({
@@ -131,11 +147,14 @@ const updateBrand = async (req, res) => {
         }
         await brand.save();
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Update Brand Successful', {brand: brand}));
+            .json(responseBody(successResponse.status,
+                'Update Brand Successful',
+                brand
+            ));
     } catch (error) {
         console.log(`updateBrand ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 

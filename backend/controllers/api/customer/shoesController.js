@@ -21,7 +21,6 @@ const getShoes = async (req, res) => {
     const customerId = req.user.id;
 
     try {
-        console.log('ccc:',searchQuery)
         const query = {
             isActive: true,
             name: {$regex: searchQuery, $options: 'i'}
@@ -84,21 +83,35 @@ const getShoes = async (req, res) => {
             if (shoe.thumbnail) shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoe.thumbnail, maxAge);
             return shoeData;
         }));
+
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Shoes Successful', {
-                shoes: shoesData,
-                currentPage: currentPage,
-                totalPages: totalPages
-            }));
+            .json(responseBody(successResponse.status,
+                'Get Shoes Successful',
+                shoesData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalShoes,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getShoes ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
 const getShoesById = async (req, res) => {
-    const customerId = req.user.d; // Kiểm tra giá trị customerId, có thể cần điều chỉnh nếu không đúng
+    const customerId = req.user.id;
     try {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail brand category name describe description')
@@ -106,7 +119,7 @@ const getShoesById = async (req, res) => {
             .populate('category', 'name')
             .lean();
 
-        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found', {}));
+        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
 
         const reviewData = await ShoesReview.aggregate([
             {$match: {shoes: {$in: [shoes._id]}, isActive: true}},
@@ -138,14 +151,16 @@ const getShoesById = async (req, res) => {
         }
 
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Shoes by ID Successful', {shoes: shoeData}));
+            .json(responseBody(successResponse.status,
+                'Get Shoes by ID Successful',
+                shoeData
+            ));
     } catch (error) {
         console.log(`getShoesById ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
-
 
 export default {
     getShoes,

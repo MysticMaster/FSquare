@@ -16,9 +16,9 @@ const maxAge = 86400;
 
 const createCategory = async (req, res) => {
     const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin', {}));
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {name} = req.body;
-    if (!name) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Name is required', {}));
+    if (!name) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Name is required'));
 
     try {
         const existingCategory = await Category.findOne({
@@ -30,11 +30,14 @@ const createCategory = async (req, res) => {
         if (req.file) category.thumbnail = await putSingleImage(`${categoryDir}/${thumbnailDir}`, req.file);
         await category.save();
         res.status(createdResponse.code)
-            .json(responseBody(createdResponse.status, 'A new category has been created', {category: category}));
+            .json(responseBody(createdResponse.status,
+                'A new category has been created',
+                category
+            ));
     } catch (error) {
         console.log(`createCategory ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
@@ -73,16 +76,29 @@ const getCategories = async (req, res) => {
             return categoryData;
         }));
 
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Categories Successful', {
-                categories: categoriesData,
-                currentPage: currentPage,
-                totalPages: totalPages
-            }));
+            .json(responseBody(successResponse.status,
+                'Get Categories Successful',
+                categoriesData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalCategories,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getCategories ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 };
 
@@ -91,26 +107,29 @@ const getCategoryById = async (req, res) => {
         const category = await Category.findById(req.params.id)
             .select('_id thumbnail name createdAt isActive').lean();
 
-        if (!category) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found', {}));
+        if (!category) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found'));
         const categoryData = {...category}
         if (categoryData.thumbnail) categoryData.thumbnail = await getSingleImage(`${categoryDir}/${thumbnailDir}`, categoryData.thumbnail, maxAge);
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Category Successful', {category: categoryData}));
+            .json(responseBody(successResponse.status,
+                'Get Category Successful',
+                categoryData
+            ));
     } catch (error) {
         console.log(`getCategoryById ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
 const updateCategory = async (req, res) => {
     const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin', {}));
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {name, isActive} = req.body;
     try {
         const category = await Category.findById(req.params.id)
             .select('_id thumbnail name isActive');
-        if (!category) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found', {}));
+        if (!category) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found'));
 
         if (name && name !== '') {
             const existingCategory = await Category.findOne({
@@ -130,11 +149,14 @@ const updateCategory = async (req, res) => {
         }
         await category.save();
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Update Category Successful', {category: category}));
+            .json(responseBody(successResponse.status,
+                'Update Category Successful',
+                category
+            ));
     } catch (error) {
         console.log(`updateCategory ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 

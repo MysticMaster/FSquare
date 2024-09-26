@@ -29,8 +29,11 @@ const generateS3Key = () => {
     return `${year}${month}${day}-${generateString(5)}-${hours}${minutes}${seconds}`;
 }
 
-const responseBody = (status = '', message = '', data = {}) => {
-    return {status, message, data};
+const responseBody = (status = '', message = '', data, options) => {
+    const result = {status: status, message: message};
+    if (data) result.data = data;
+    if (options) result.options = options;
+    return result;
 }
 
 export {
