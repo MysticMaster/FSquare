@@ -12,11 +12,11 @@ const getSizesByIdClassification = async (req, res) => {
             isActive: true
         }).select('_id sizeNumber').lean();
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Sizes Successful', {sizes: sizes}));
+            .json(responseBody(successResponse.status, 'Get Sizes Successful',  sizes));
     } catch (error) {
         console.log(`getSizesByIdClassification ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
@@ -26,13 +26,13 @@ const getSizeById = async (req, res) => {
             .select('_id sizeNumber quantity')
             .lean();
 
-        if (!size) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found', {}));
+        if (!size) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found'));
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Size Successful', {size: size}));
+            .json(responseBody(successResponse.status, 'Get Size Successful',  size));
     } catch (error) {
         console.log(`getSizeById ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 

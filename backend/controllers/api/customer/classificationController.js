@@ -24,11 +24,13 @@ const getClassificationsByIdShoes = async (req, res) => {
             return classificationData;
         }));
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Classification Successful', {classifications: classificationsData}));
+            .json(responseBody(successResponse.status,
+                'Get Classification Successful',
+                classificationsData));
     } catch (error) {
         console.log(`getClassificationsByIdShoes ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
@@ -38,16 +40,19 @@ const getClassificationById = async (req, res) => {
             .select('_id images videos color country price')
             .lean();
 
-        if (!classification) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Classification not found', {}));
+        if (!classification) return res.status(notFoundResponse.code)
+            .json(responseBody(notFoundResponse.status, 'Classification not found'));
         const classificationData = {...classification};
         if (classificationData.images) classificationData.images = await getFiles(`${classificationDir}/${imageDir}`, classificationData.images, maxAge);
         if (classificationData.videos) classificationData.videos = await getFiles(`${classificationDir}/${videoDir}`, classificationData.videos, maxAge);
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Classification Successful', {classification: classificationData}));
+            .json(responseBody(successResponse.status,
+                'Get Classification Successful',
+                classification));
     } catch (error) {
         console.log(`getClassificationById ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 

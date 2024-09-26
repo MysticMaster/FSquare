@@ -2,6 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import bodyParser from 'body-parser';
 import logger from 'morgan';
+import cors from 'cors';
 import {connectDB} from "./config/database.js";
 import auth from "./routes/auth/authRoute.js";
 import {authentication} from "./middleware/authMiddleware.js";
@@ -13,15 +14,24 @@ const app = express();
 connectDB().then(r => {
 });
 
+const corsOptions = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
 app.use(logger('dev'));
 app.use(express.json());
+app.use(cors(corsOptions));
 app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 app.use('/auth', auth);
-app.use('/api/v0',authentication('admin'), adminRoute);
-app.use('/api/v1',authentication('customer'),customerRoute);
+app.use('/api/admin',authentication('admin'), adminRoute);
+app.use('/api/customer',authentication('customer'),customerRoute);
 
 export default app;

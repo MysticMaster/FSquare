@@ -4,10 +4,10 @@
   "description": "FSquare api & administrator page",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"npm start --prefix backend\" \"npm start --prefix frontend\"",
-    "server:start": "cd backend && npm start",
-    "server:dev": "cd backend && npm run dev",
-    "client": "cd frontend && npm start"
+    "start": "concurrently \"yarn start --prefix backend\" \"yarn start --prefix frontend\"",
+    "server:start": "cd backend && yarn start",
+    "server:dev": "cd backend && yarn run dev",
+    "client": "cd frontend && yarn start"
   },
   "repository": {
     "type": "git",

@@ -15,7 +15,7 @@ const createOrDeleteFavorite = async (req, res) => {
     const userId = req.user.id;
     const {shoes} = req.body;
     if (!shoes) return res.status(badRequestResponse.code)
-        .json(responseBody(badRequestResponse.status, 'Shoes is required', {}));
+        .json(responseBody(badRequestResponse.status, 'Shoes is required'));
     try {
         const existingFavorite = await Favorite.findOne({
             customer: userId,
@@ -23,17 +23,24 @@ const createOrDeleteFavorite = async (req, res) => {
         }).select('_id').lean();
         if (existingFavorite) {
             await Favorite.findByIdAndDelete(existingFavorite._id);
-            return res.status(successResponse.code).json(responseBody(successResponse.status, 'Removed favorite this shoe', {id: existingFavorite._id}));
+            return res.status(successResponse.code)
+                .json(responseBody(successResponse.status,
+                    'Removed favorite this shoe',
+                    existingFavorite._id));
         }
         const favorite = await Favorite.create({
             customer: userId,
             shoes: shoes
         });
-        res.status(createdResponse.code).json(responseBody(createdResponse.status, 'Added shoes to favorites', {favorite: favorite}));
+        res.status(createdResponse.code)
+            .json(responseBody(createdResponse.status,
+                'Added shoes to favorites',
+                favorite
+            ));
     } catch (error) {
         console.log(`createFavorite ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
 
@@ -94,11 +101,14 @@ const getFavorites = async (req, res) => {
         }));
 
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Favorites Successful', {favorites: favoriteShoesData}));
+            .json(responseBody(successResponse.status,
+                'Get Favorites Successful',
+                favoriteShoesData
+            ));
     } catch (error) {
         console.log(`getFavorites ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 };
 
@@ -107,13 +117,13 @@ const deleteFavorite = async (req, res) => {
         const favoriteId = req.params.id;
         const deletedFavorite = await Favorite.findByIdAndDelete(favoriteId);
 
-        if (!deletedFavorite) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Favorite not found', {}));
+        if (!deletedFavorite) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Favorite not found'));
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Favorite deleted successfully', {id: favoriteId}));
+            .json(responseBody(successResponse.status, 'Favorite deleted successfully', favoriteId));
     } catch (error) {
         console.log(`deleteFavorite ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error', {}));
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 };
 

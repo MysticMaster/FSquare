@@ -38,26 +38,61 @@ const verifyToken = async (token) => {
 };
 
 const authentication = (requiredRole) => async (req, res, next) => {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) return res.status(unauthorizedResponse.code).send(responseBody(unauthorizedResponse.status, 'No token provided', {}));
+    let token;
+
+    if (requiredRole === 'admin') {
+        token = req.cookies.Authorization;
+        if (!token) {
+            return res.status(unauthorizedResponse.code).json(
+                responseBody(unauthorizedResponse.status, 'No token provided')
+            );
+        }
+    } else {
+        token = req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(unauthorizedResponse.code).json(
+                responseBody(unauthorizedResponse.status, 'No token provided')
+            );
+        }
+    }
 
     try {
         const decodedToken = await verifyToken(token);
 
-        if (requiredRole && decodedToken.role !== requiredRole) return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied', {}));
+        if (requiredRole && decodedToken.role !== requiredRole) {
+            return res.status(forbiddenResponse.code).json(
+                responseBody(forbiddenResponse.status, 'Access denied')
+            );
+        }
+
         const UserModel = decodedToken.role === 'admin' ? Admin : Customer;
         const user = await UserModel.findById(decodedToken.id).select('lastLogin').lean();
-        if (!user) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, `${decodedToken.role.charAt(0).toUpperCase() + decodedToken.role.slice(1)} not found`, {}));
-        if (decodedToken.lastLogin !== user.lastLogin) return res.status(forbiddenResponse.code).json(responseBody(forbiddenResponse.status, 'Token is obsolete', {}));
+
+        if (!user) {
+            return res.status(notFoundResponse.code).json(
+                responseBody(notFoundResponse.status, `${decodedToken.role.charAt(0).toUpperCase() + decodedToken.role.slice(1)} not found`)
+            );
+        }
+
+        if (decodedToken.lastLogin !== user.lastLogin) {
+            return res.status(forbiddenResponse.code).json(
+                responseBody(forbiddenResponse.status, 'Token is obsolete')
+            );
+        }
 
         req.user = decodedToken;
         next();
-
     } catch (error) {
-        if (error.name === 'TokenExpiredError') return res.status(unauthorizedResponse.code).send(responseBody(unauthorizedResponse.status, 'Token has expired', {}));
-        res.status(internalServerErrorResponse.code)
-            .send(responseBody(internalServerErrorResponse.status, 'An unspecified exception occurred.', {}));
+        if (error.name === 'TokenExpiredError') {
+            return res.status(unauthorizedResponse.code).json(
+                responseBody(unauthorizedResponse.status, 'Token has expired')
+            );
+        }
+        res.status(internalServerErrorResponse.code).json(
+            responseBody(internalServerErrorResponse.status, 'An unspecified exception occurred.')
+        );
     }
 };
+
 
 export {generateToken, authentication};
