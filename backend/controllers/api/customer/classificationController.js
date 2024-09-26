@@ -26,7 +26,8 @@ const getClassificationsByIdShoes = async (req, res) => {
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Classification Successful',
-                classificationsData));
+                classificationsData
+            ));
     } catch (error) {
         console.log(`getClassificationsByIdShoes ${error.message}`);
         res.status(internalServerErrorResponse.code)
@@ -48,7 +49,8 @@ const getClassificationById = async (req, res) => {
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Classification Successful',
-                classification));
+                classificationData
+            ));
     } catch (error) {
         console.log(`getClassificationById ${error.message}`);
         res.status(internalServerErrorResponse.code)

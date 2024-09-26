@@ -80,7 +80,7 @@ const getFavorites = async (req, res) => {
             }
         ]);
 
-        const favoriteShoesData = await Promise.all(favorites.map(async (fav) => {
+        const favoriteData = await Promise.all(favorites.map(async (fav) => {
             const shoe = fav.shoes;
 
             const priceRange = priceRanges.find(c => c._id.equals(shoe._id)) || {minPrice: 0, maxPrice: 0};
@@ -103,7 +103,7 @@ const getFavorites = async (req, res) => {
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Favorites Successful',
-                favoriteShoesData
+                favoriteData
             ));
     } catch (error) {
         console.log(`getFavorites ${error.message}`);
