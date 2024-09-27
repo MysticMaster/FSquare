@@ -25,7 +25,7 @@ const putOTPToRedis = async (email, otp) => {
     const ttl = 600;
 
     try {
-        await redisClient.set(key, otp, 'EX', ttl);
+        await redisClient.set(key, otp, { EX: ttl });
         console.log(`OTP saved for ${email}`);
     } catch (err) {
         console.error('Error saving OTP to Redis', err.message);

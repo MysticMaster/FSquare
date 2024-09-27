@@ -14,7 +14,6 @@ const Brand: React.FC = () => {
         dispatch(fetchBrands());
     }, []);
 
-
     return (
         <div>
             <h1>Brand Management</h1>
