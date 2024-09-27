@@ -26,10 +26,6 @@ const authentication = async (req, res) => {
         if (customer.isActive === false) return res.status(forbiddenResponse.code)
             .json(responseBody(forbiddenResponse.status, 'Account has been disabled'));
 
-        const existingOTP = await getOTPFromRedis(email);
-        if (existingOTP) return res.status(conflictResponse.code)
-            .json(responseBody(conflictResponse.status, 'OTP request already exists'));
-
         const otp = generateOTP(4);
         await putOTPToRedis(email, otp);
         await sendOTP(email, 'Mã xác nhận đăng nhập tài khoản', otp);
@@ -52,9 +48,6 @@ const registration = async (req, res) => {
             .select('_id')
             .lean();
         if (customer) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Email already in use'));
-
-        const existingOTP = await getOTPFromRedis(email);
-        if (existingOTP) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'OTP request already exists'));
 
         const otp = generateOTP(4);
         await putOTPToRedis(email, otp);
