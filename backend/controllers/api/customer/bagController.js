@@ -168,7 +168,7 @@ const deleteBags = async (req, res) => {
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
-}
+};
 
 const deleteBagById = async (req, res) => {
     try {
@@ -182,7 +182,7 @@ const deleteBagById = async (req, res) => {
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
-}
+};
 
 export default {
     createBag,
@@ -190,5 +190,5 @@ export default {
     updateBagQuantity,
     deleteBags,
     deleteBagById
-}
+};
 
