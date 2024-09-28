@@ -7,7 +7,10 @@ import {connectDB} from "./config/database.js";
 import auth from "./routes/auth/authRoute.js";
 import {authentication} from "./middleware/authMiddleware.js";
 import adminRoute from "./routes/api/adminRoute.js";
-import customerRoute from "./routes/api/customerRoute.js";
+import customerRouteV1 from "./routes/api/customerRouteV1.js";
+import customerRouteV2 from "./routes/api/customerRouteV2.js";
+import {swaggerSpec} from "./config/swagger.js";
+import swaggerUi from "swagger-ui-express";
 
 const app = express();
 
@@ -31,7 +34,9 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 app.use('/auth', auth);
-app.use('/api/admin',authentication('admin'), adminRoute);
-app.use('/api/customer',authentication('customer'),customerRoute);
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api/admin', authentication('admin'), adminRoute);
+app.use('/api/customer/v1', authentication('customer'), customerRouteV1);
+app.use('/api/customer/v2', customerRouteV2);
 
 export default app;
