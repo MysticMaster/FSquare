@@ -1,7 +1,6 @@
-// authSlice.ts
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
-import { adminApi, authApi } from '../../api/api';
+import {adminApi, authApi} from '../../api/api';
 
 interface Admin {
     _id: string;
@@ -9,13 +8,14 @@ interface Admin {
     lastName: string;
     avatar: string;
     phone: string;
+    authority: string;
     fcmToken: string;
 }
 
 interface AuthState {
     authority: string | null;
     admin: Admin | null;
-    status: 'idle' | 'loading' | 'succeeded' | 'failed';
+    status: string | null;
     error: string | null;
 }
 
@@ -26,27 +26,39 @@ const initialState: AuthState = {
     error: null,
 };
 
-export const login = createAsyncThunk(
+export const login = createAsyncThunk<{ authority: string; status: string }, { username: string; password: string }>(
     'auth/login',
-    async ({ username, password }: { username: string; password: string }, { rejectWithValue }) => {
+    async ({username, password}, {rejectWithValue}) => {
         try {
-            const response = await axiosClient.post(authApi.login, { username, password });
+            const response = await axiosClient.post(authApi.login, {username, password}, {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
             if (response.status === 200 && response.data.data) {
-                return response.data.data;
+                return {authority: response.data.data, status: 'success'};
             } else {
                 throw new Error('Login failed');
             }
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.error || 'Unable to login');
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                return rejectWithValue(error.message);
+            }
+            return rejectWithValue('Unable to login');
         }
     }
 );
 
 export const checkAuth = createAsyncThunk(
     'auth/checkAuth',
-    async (_, { rejectWithValue }) => {
+    async (_, {rejectWithValue}) => {
         try {
-            const response = await axiosClient.get(adminApi.getProfile, { withCredentials: true });
+            const response = await axiosClient.get(adminApi.getProfile, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                withCredentials: true
+            });
             if (response.status === 200) {
                 return response.data.data;
             } else {
@@ -75,7 +87,7 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 state.authority = action.payload.authority;
-                state.status = 'succeeded';
+                state.status = action.payload.status;
                 state.error = null;
             })
             .addCase(login.rejected, (state, action) => {
@@ -98,5 +110,5 @@ const authSlice = createSlice({
     },
 });
 
-export const { logout } = authSlice.actions;
+export const {logout} = authSlice.actions;
 export default authSlice.reducer;

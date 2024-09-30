@@ -28,7 +28,7 @@ const authentication = async (req, res) => {
 
         const otp = generateOTP(4);
         await putOTPToRedis(email, otp);
-        await sendOTP(email, 'Mã xác nhận đăng nhập tài khoản', otp);
+        await sendOTP(email, 'Mã xác thực đăng nhập tài khoản', otp);
 
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'OTP sent successfully'));
@@ -51,7 +51,7 @@ const registration = async (req, res) => {
 
         const otp = generateOTP(4);
         await putOTPToRedis(email, otp);
-        await sendOTP(email, 'Mã xác nhận đăng ký tài khoản', otp);
+        await sendOTP(email, 'Mã xác thực đăng ký tài khoản', otp);
 
         res.status(successResponse.code).json(responseBody(successResponse.status, 'OTP sent successfully'));
     } catch (error) {

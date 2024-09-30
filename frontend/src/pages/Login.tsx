@@ -1,45 +1,84 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { login } from '../redux/reducers/authSlice';
-import { RootState } from '../redux/store';
+import { login, checkAuth } from '../redux/reducers/authSlice';
+import { RootState, AppDispatch } from '../redux/store';
+import { useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
+    const navigate = useNavigate();
     const status = useSelector((state: RootState) => state.auth.status);
-    const error = useSelector((state: RootState) => state.auth.error);
 
-    const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        dispatch(login({ username, password }));
+        try {
+            const resultAction = await dispatch(login({ username, password })).unwrap();
+            if (resultAction.status === 'success') {
+                await dispatch(checkAuth()).unwrap();
+                navigate('/');
+            }
+        } catch (err) {
+            console.error('Failed to log in: ', err);
+        }
     };
 
     return (
-        <div>
-            <form onSubmit={handleLogin}>
-                <label htmlFor="username">Username</label>
-                <input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    aria-label="Username"
-                />
-                <label htmlFor="password">Password</label>
-                <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    aria-label="Password"
-                />
-                <button type="submit" disabled={status === 'loading'}>
-                    {status === 'loading' ? 'Logging in...' : 'Login'}
-                </button>
-                {error && <p>Error: {error}</p>}
-            </form>
-        </div>
+        <section className="bg-gray-50">
+            <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
+                <a href="#" className="flex items-center mb-6 text-3xl font-semibold text-gray-900">
+                    <img className="w-10 h-10 mr-2 rounded-lg" src="/logo/fsquare_light.webp" alt="logo"/>
+                    FSquare
+                </a>
+                <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
+                    <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
+                        <h1 className="text-xl font-bold leading-tight tracking-tight text-orange-500 md:text-2xl">
+                            Đăng nhập tài khoản
+                        </h1>
+                        <form className="space-y-4 md:space-y-6" onSubmit={handleLogin}>
+                            <div>
+                                <label htmlFor="username" className="block mb-2 text-sm font-medium text-gray-900">
+                                    Tên đăng nhập
+                                </label>
+                                <input
+                                    id="username"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                    placeholder="Nhập tên đăng nhập"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900">
+                                    Mật khẩu
+                                </label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                            <div className="flex items-center justify-end">
+                                <a href="#" className="text-sm font-bold text-primary-600 hover:underline">
+                                    Forgot password?
+                                </a>
+                            </div>
+                            <button type="submit"
+                                    className="w-full text-white bg-orange-500 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm py-2.5 text-center">
+                                {status === 'loading' ? 'Logging in...' : 'Login'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
     );
 };
 

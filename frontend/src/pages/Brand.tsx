@@ -1,47 +1,49 @@
-import React,{ useEffect }  from 'react';
-import {Link} from "react-router-dom";
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchBrands } from '../redux/reducers/brandSlice';
-import { RootState } from '../redux/store';
+import { RootState, AppDispatch } from '../redux/store';
+import BrandItem from "../components/brand/BrandItem";
+import BrandForm from "../components/brand/BrandAddForm";
 
 const Brand: React.FC = () => {
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
     const brands = useSelector((state: RootState) => state.brands.brands);
     const status = useSelector((state: RootState) => state.brands.status);
     const error = useSelector((state: RootState) => state.brands.error);
 
     useEffect(() => {
         dispatch(fetchBrands());
-    }, []);
+    }, [dispatch]);
 
     return (
-        <div>
-            <h1>Brand Management</h1>
-            {status === 'loading' && <div>Loading...</div>}
-            {error && <div>Error: {error}</div>}
-            <ul>
+        <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Quản lý thương hiệu</h1>
+            <BrandForm /> {/* Hiển thị form thêm thương hiệu mới */}
+            {status === 'loading' && <div className="text-lg">Loading...</div>}
+            {error && <div className="text-red-500">Error: {error}</div>}
+            <table className="min-w-full bg-white border border-gray-200">
+                <thead>
+                <tr>
+                    <th className="py-3 px-3 border-b border-gray-200 text-end"></th>
+                    <th className="py-3 px-3 border-b border-gray-200 text-end">Tên thương hiệu</th>
+                    <th className="py-3 px-3 border-b border-gray-200 text-end">Số giày có</th>
+                    <th className="py-3 px-3 border-b border-gray-200 text-end">Thời gian tạo</th>
+                    <th className="py-3 px-3 border-b border-gray-200 text-end">Trạng thái</th>
+                    <th className="py-3 px-3 border-b border-gray-200 text-end"></th>
+                </tr>
+                </thead>
+                <tbody>
                 {brands && brands.length > 0 ? (
-                    brands.map((brand) => {
-                        return (
-                            <li key={brand._id}>
-                                <img
-                                    src={brand.thumbnail.url}
-                                    alt={brand.name}
-                                    style={{width: '100px', height: '100px'}}
-                                />
-                                <div>Name: {brand.name}</div>
-                                <div>Created At: {brand.createdAt}</div>
-                                <div>Status: {brand.isActive ? 'Active' : 'Inactive'}</div>
-                            </li>
-                        );
-                    })
+                    brands.map((brand) => (
+                        <BrandItem key={brand._id} brand={brand}/>
+                    ))
                 ) : (
-                    <p>No brands available.</p>
+                    <tr>
+                        <td colSpan={6} className="text-center py-2">No brands available.</td>
+                    </tr>
                 )}
-            </ul>
-            <Link to="/">
-                <button>Go to home Page</button>
-            </Link>
+                </tbody>
+            </table>
         </div>
     );
 };

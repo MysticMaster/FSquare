@@ -1,16 +1,17 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
-import { brandApi } from '../../api/api';
+import {brandApi} from '../../api/api';
 
-interface thumbnail{
-    url:string;
-    key:string;
+interface thumbnail {
+    url: string;
+    key: string;
 }
 
 interface Brand {
     _id: string;
-    thumbnail: thumbnail;
+    thumbnail: thumbnail | null;
     name: string;
+    shoesCount: number;
     createdAt: string;
     isActive: boolean;
 }
@@ -35,6 +36,18 @@ export const fetchBrands = createAsyncThunk(
     }
 );
 
+export const createBrand = createAsyncThunk(
+    'brands/createBrand',
+    async (brandData: FormData) => {
+        const response = await axiosClient.post(brandApi.create, brandData,{
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+        return response.data.data;
+    }
+);
+
 const brandSlice = createSlice({
     name: 'brands',
     initialState,
@@ -51,6 +64,9 @@ const brandSlice = createSlice({
             .addCase(fetchBrands.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to fetch brands';
+            })
+            .addCase(createBrand.fulfilled, (state, action) => {
+                state.brands = [action.payload, ...state.brands];
             });
     },
 });
