@@ -29,36 +29,28 @@ const authentication = async (req, res) => {
     try {
         const admin = await Admin.findOne({username: username})
             .select('_id password role authority lastLogin isActive');
-
         if (!admin) {
             return res.status(notFoundResponse.code)
                 .json(responseBody(notFoundResponse.status, 'Username not registered'));
         }
-
         if (admin.isActive === false) {
             return res.status(forbiddenResponse.code)
                 .json(responseBody(forbiddenResponse.status, 'Admin has been disabled'));
         }
-
         const isPasswordValid = await argon2.verify(admin.password, password);
         if (!isPasswordValid) {
             return res.status(conflictResponse.code)
                 .json(responseBody(conflictResponse.status, 'Incorrect password'));
         }
-
         admin.lastLogin += 1;
-
         const token = await generateToken(admin, maxAge);
-
         await admin.save();
-
         res.cookie('Authorization', token, {
             maxAge: maxAge * 1000,
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Strict'
         });
-
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Login successfully', admin.authority));
     } catch (error) {

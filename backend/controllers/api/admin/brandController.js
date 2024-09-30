@@ -30,8 +30,15 @@ const createBrand = async (req, res) => {
         const brand = new Brand({name: name});
         if (req.file) brand.thumbnail = await putSingleImage(`${brandDir}/${thumbnailDir}`, req.file);
         await brand.save();
+
+        const brandData = await Brand.findById(brand.id)
+            .select('_id thumbnail name createdAt isActive').lean();
+
+        if (!brandData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
+        if (brandData.thumbnail) brandData.thumbnail = await getSingleImage(`${brandDir}/${thumbnailDir}`, brandData.thumbnail, maxAge);
+        brandData.shoesCount = 0;
         res.status(createdResponse.code)
-            .json(responseBody(createdResponse.status, 'A new brand has been created', brand));
+            .json(responseBody(createdResponse.status, 'A new brand has been created', brandData));
     } catch (error) {
         console.log(`createBrand ${error.message}`);
         res.status(internalServerErrorResponse.code)
