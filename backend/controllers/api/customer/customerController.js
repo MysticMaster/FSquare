@@ -119,13 +119,15 @@ const otpVerification = async (req, res) => {
 const updatePinCode = async (req, res) => {
     const userId = req.user.id;
     const {pinCode, action} = req.body;
-    if (!pinCode || !action) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
+    if (!action) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Action is required'));
     try {
         const customer = await Customer.findById(userId)
             .select('pinCode');
         if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
-        if (action === 'on') customer.pinCode = await argon2.hash(pinCode);
-        else if (action === 'off') customer.pinCode = null;
+        if (action === 'on') {
+            if (!pinCode) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'PIN is required'));
+            customer.pinCode = await argon2.hash(pinCode);
+        } else if (action === 'off') customer.pinCode = null;
 
         await customer.save();
         res.status(successResponse.code)

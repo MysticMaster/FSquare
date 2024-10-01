@@ -66,7 +66,7 @@ const authentication = (requiredRole) => async (req, res, next) => {
         }
 
         const UserModel = decodedToken.role === 'admin' ? Admin : Customer;
-        const user = await UserModel.findById(decodedToken.id).select('lastLogin').lean();
+        const user = await UserModel.findById(decodedToken.id).select('lastLogin isActive').lean();
 
         if (!user) {
             return res.status(notFoundResponse.code).json(
@@ -79,6 +79,10 @@ const authentication = (requiredRole) => async (req, res, next) => {
                 responseBody(forbiddenResponse.status, 'Token is obsolete')
             );
         }
+
+        if (user.isActive === false) return res.status(forbiddenResponse.code).json(
+            responseBody(forbiddenResponse.status, 'Account has been disabled')
+        );
 
         req.user = decodedToken;
         next();
