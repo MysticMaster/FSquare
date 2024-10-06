@@ -4,6 +4,7 @@ import favoriteController from "../../controllers/api/customer/favoriteControlle
 import bagController from "../../controllers/api/customer/bagController.js";
 import customerController from "../../controllers/api/customer/customerController.js";
 import * as authenticationController from "../../middleware/authMiddleware.js";
+import searchHistoryController from "../../controllers/api/customer/searchHistoryController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -1124,5 +1125,254 @@ router.delete('/bags', bagController.deleteBags);
  *                   example: Server error
  */
 router.delete('/bags/:id', bagController.deleteBagById);
+
+/**
+ * @openapi
+ * /v1/histories:
+ *   post:
+ *     summary: V1 - Ghi nhận một mục lịch sử tìm kiếm mới
+ *     description: Thêm một mục lịch sử tìm kiếm mới cho người dùng dựa trên từ khóa được cung cấp. Nếu đã tồn tại một mục với cùng từ khóa cho cùng người dùng, không thêm mục mới.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               keyword:
+ *                 type: string
+ *                 description: Từ khóa tìm kiếm được sử dụng bởi khách hàng.
+ *                 example: "Nike Ak rồng xanh"
+ *     responses:
+ *       201:
+ *         description: Mục lịch sử tìm kiếm đã được tạo thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Mục lịch sử đã được tạo thành công
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "6123456789abcdef01234567"
+ *                     customer:
+ *                       type: string
+ *                       example: "6123456789abcdef01234567"
+ *                     keyword:
+ *                       type: string
+ *                       example: "Nike Ak rồng xanh"
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: Thời điểm tạo mục lịch sử.
+ *       204:
+ *         description: Không có nội dung mới được thêm vào vì từ khóa này đã tồn tại cho người dùng, do đó không thêm mục mới.
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi tạo mục lịch sử tìm kiếm.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Lỗi máy chủ
+ */
+router.post('/histories', searchHistoryController.createHistory);
+
+/**
+ * @openapi
+ * /v1/histories:
+ *   get:
+ *     summary: V1 - Lấy danh sách lịch sử tìm kiếm của người dùng
+ *     description: Trả về danh sách các mục lịch sử tìm kiếm của người dùng, được sắp xếp theo thứ tự mới nhất.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của người dùng để truy vấn lịch sử tìm kiếm của họ.
+ *     responses:
+ *       200:
+ *         description: Danh sách lịch sử tìm kiếm đã được lấy thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Lịch sử tìm kiếm đã được lấy thành công.
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "6123456789abcdef01234567"
+ *                       customer:
+ *                         type: string
+ *                         example: "6123456789abcdef01234567"
+ *                       keyword:
+ *                         type: string
+ *                         example: "Nike Ak rồng xanh"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: Thời điểm tạo mục lịch sử.
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi truy vấn lịch sử tìm kiếm.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Lỗi máy chủ
+ */
+router.get('/histories',searchHistoryController.getHistories);
+
+/**
+ * @openapi
+ * /v1/histories:
+ *   delete:
+ *     summary: V1 - Xóa các mục lịch sử tìm kiếm của người dùng
+ *     description: Xóa tất cả các mục lịch sử tìm kiếm của người dùng được chỉ định bởi ID. Thao tác này không thể hoàn tác.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token để xác thực người dùng.
+ *     responses:
+ *       204:
+ *         description: Lịch sử tìm kiếm đã được xóa thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Histories deleted successfully
+ *       400:
+ *         description: Yêu cầu không hợp lệ nếu ID người dùng không được cung cấp hoặc không hợp lệ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Invalid request
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi cố gắng xóa lịch sử tìm kiếm.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.delete('/histpries',searchHistoryController.deleteHistories);
+
+/**
+ * @openapi
+ * /v1/histories/{id}:
+ *   delete:
+ *     summary: V1 - Xóa một mục lịch sử tìm kiếm
+ *     description: Xóa một mục lịch sử tìm kiếm dựa trên ID được cung cấp. Nếu mục không tồn tại, trả về lỗi.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của mục lịch sử tìm kiếm cần xóa.
+ *     responses:
+ *       200:
+ *         description: Mục lịch sử đã được xóa thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "History deleted successfully"
+ *                 data:
+ *                   type: string
+ *                   example: "6123456789abcdef01234567"
+ *       404:
+ *         description: Không tìm thấy mục lịch sử
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "History not found"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi xóa mục lịch sử.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.delete('/histpries/:id',searchHistoryController.deleteHistory);
 
 export default router;

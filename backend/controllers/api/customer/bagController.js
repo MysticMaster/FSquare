@@ -60,6 +60,7 @@ const getBags = async (req, res) => {
 
     try {
         const bags = await Bag.find({customer: userId})
+            .sort({createdAt: -1})
             .populate({
                 path: 'size',
                 select: '_id sizeNumber classification',
@@ -176,7 +177,7 @@ const deleteBagById = async (req, res) => {
         const deleteBag = await Bag.findByIdAndDelete(bagId);
         if (!deleteBag) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Bag not found'));
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Bag deleted successfully',  bagId));
+            .json(responseBody(successResponse.status, 'Bag deleted successfully', bagId));
     } catch (error) {
         console.log(`deleteBag ${error.message}`);
         res.status(internalServerErrorResponse.code)
