@@ -9,15 +9,10 @@ import Home from './pages/Home';
 const App: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const authority = useSelector((state: RootState) => state.auth.authority);
-    const status = useSelector((state: RootState) => state.auth.status);
 
     useEffect(() => {
         dispatch(checkAuth());
     }, []);
-
-    if (status === 'loading') {
-        return <div>Loading...</div>;
-    }
 
     return (
         <Router>

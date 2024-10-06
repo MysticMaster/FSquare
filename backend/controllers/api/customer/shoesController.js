@@ -18,20 +18,21 @@ const getShoes = async (req, res) => {
     const searchQuery = req.query.search || '';
     const brandId = req.query.brand || '';
     const categoryId = req.query.category || '';
-    const customerId = req.user.id;
+    const customerId = req.user ? req.user.id : null; // Kiểm tra nếu `req.user` tồn tại
 
     try {
         const query = {
             isActive: true,
-            name: {$regex: searchQuery, $options: 'i'}
+            name: { $regex: searchQuery, $options: 'i' }
         };
         if (brandId) query.brand = brandId;
         if (categoryId) query.category = categoryId;
+
         const totalShoes = await Shoes.countDocuments(query);
         const totalPages = Math.ceil(totalShoes / sizePage);
 
         const shoes = await Shoes.find(query)
-            .sort({createdAt: -1})
+            .sort({ createdAt: -1 })
             .skip((currentPage - 1) * sizePage)
             .limit(sizePage)
             .select('_id thumbnail name')
@@ -39,32 +40,36 @@ const getShoes = async (req, res) => {
 
         const shoesIds = shoes.map(shoe => shoe._id);
         const priceRanges = await Classification.aggregate([
-            {$match: {shoes: {$in: shoesIds}, isActive: true}},
+            { $match: { shoes: { $in: shoesIds }, isActive: true } },
             {
                 $group: {
                     _id: "$shoes",
-                    minPrice: {$min: "$price"},
-                    maxPrice: {$max: "$price"}
+                    minPrice: { $min: "$price" },
+                    maxPrice: { $max: "$price" }
                 }
             }
         ]);
 
         const reviewData = await ShoesReview.aggregate([
-            {$match: {shoes: {$in: shoesIds}, isActive: true}},
+            { $match: { shoes: { $in: shoesIds }, isActive: true } },
             {
                 $group: {
                     _id: "$shoes",
-                    avgRating: {$avg: "$rating"},
-                    reviewCount: {$sum: 1}
+                    avgRating: { $avg: "$rating" },
+                    reviewCount: { $sum: 1 }
                 }
             }
         ]);
 
-        const favoriteData = await Favorite.find({customer: customerId, shoes: {$in: shoesIds}})
-            .select('shoes')
-            .lean();
+        // Nếu `customerId` tồn tại, thực hiện các thao tác liên quan đến yêu thích
+        let favoriteShoesIds = [];
+        if (customerId) {
+            const favoriteData = await Favorite.find({ customer: customerId, shoes: { $in: shoesIds } })
+                .select('shoes')
+                .lean();
 
-        const favoriteShoesIds = favoriteData.map(fav => fav.shoes.toString());
+            favoriteShoesIds = favoriteData.map(fav => fav.shoes.toString());
+        }
 
         const shoesData = await Promise.all(shoes.map(async (shoe) => {
             const priceRange = priceRanges.find(pr => pr._id.equals(shoe._id));
@@ -77,10 +82,14 @@ const getShoes = async (req, res) => {
                 maxPrice: priceRange ? priceRange.maxPrice : 0,
                 rating: reviewInfo ? reviewInfo.avgRating.toFixed(1) : 0,
                 reviewCount: reviewInfo ? reviewInfo.reviewCount : 0,
-                isFavorite: favoriteShoesIds.includes(shoe._id.toString())
+                // Chỉ kiểm tra yêu thích nếu `customerId` tồn tại
+                isFavorite: customerId ? favoriteShoesIds.includes(shoe._id.toString()) : false
             };
 
-            if (shoe.thumbnail) shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoe.thumbnail, maxAge);
+            if (shoe.thumbnail) {
+                shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoe.thumbnail, maxAge);
+            }
+
             return shoeData;
         }));
 
@@ -111,7 +120,8 @@ const getShoes = async (req, res) => {
 }
 
 const getShoesById = async (req, res) => {
-    const customerId = req.user.id;
+    const customerId = req.user ? req.user.id : null; // Kiểm tra nếu `req.user` tồn tại
+
     try {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail brand category name describe description')
@@ -119,20 +129,27 @@ const getShoesById = async (req, res) => {
             .populate('category', 'name')
             .lean();
 
-        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
+        if (!shoes) {
+            return res.status(notFoundResponse.code)
+                .json(responseBody(notFoundResponse.status, 'Shoes not found'));
+        }
 
         const reviewData = await ShoesReview.aggregate([
-            {$match: {shoes: {$in: [shoes._id]}, isActive: true}},
+            { $match: { shoes: { $in: [shoes._id] }, isActive: true } },
             {
                 $group: {
                     _id: "$shoes",
-                    avgRating: {$avg: "$rating"},
-                    reviewCount: {$sum: 1}
+                    avgRating: { $avg: "$rating" },
+                    reviewCount: { $sum: 1 }
                 }
             }
         ]);
 
-        const isFavorite = await Favorite.exists({customer: customerId, shoes: shoes._id});
+        // Chỉ kiểm tra yêu thích nếu `customerId` tồn tại
+        let isFavorite = false;
+        if (customerId) {
+            isFavorite = await Favorite.exists({ customer: customerId, shoes: shoes._id });
+        }
 
         const shoeData = {
             _id: shoes._id,
@@ -142,8 +159,8 @@ const getShoesById = async (req, res) => {
             describe: shoes.describe,
             description: shoes.description,
             rating: reviewData.length > 0 ? reviewData[0].avgRating.toFixed(1) : 0, // Kiểm tra reviewData
-            reviewCount: reviewData.length > 0 ? reviewData[0].reviewCount : 0, // Kiểm tra reviewData
-            isFavorite: !!isFavorite
+            reviewCount: reviewData.length > 0 ? reviewData[0].reviewCount : 0,   // Kiểm tra reviewData
+            isFavorite: isFavorite // Sẽ luôn là false nếu `customerId` không tồn tại
         };
 
         if (shoes.thumbnail) {
@@ -151,16 +168,13 @@ const getShoesById = async (req, res) => {
         }
 
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status,
-                'Get Shoes by ID Successful',
-                shoeData
-            ));
+            .json(responseBody(successResponse.status, 'Get Shoes by ID Successful', shoeData));
     } catch (error) {
         console.log(`getShoesById ${error.message}`);
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
-}
+};
 
 export default {
     getShoes,

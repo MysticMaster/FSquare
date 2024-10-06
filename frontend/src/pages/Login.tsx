@@ -1,23 +1,37 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { login, checkAuth } from '../redux/reducers/authSlice';
-import { RootState, AppDispatch } from '../redux/store';
-import { useNavigate } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {useDispatch, useSelector} from 'react-redux';
+import {login, checkAuth} from '../redux/reducers/authSlice';
+import {RootState, AppDispatch} from '../redux/store';
+import {useNavigate} from 'react-router-dom';
+import ErrorNotification from "../components/title/ErrorNotification.tsx";
 
 const Login: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [isButtonDisabled, setIsButtonDisabled] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
     const status = useSelector((state: RootState) => state.auth.status);
+    const uError = useSelector((state: RootState) => state.auth.uError);
+    const pError = useSelector((state: RootState) => state.auth.pError);
+
+    useEffect(() => {
+        setIsButtonDisabled(!username || !password);
+    }, [username, password]);
 
     const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
+        if (event && event.preventDefault) {
+            event.preventDefault();
+        }
         try {
-            const resultAction = await dispatch(login({ username, password })).unwrap();
+            const resultAction = await dispatch(login({username, password})).unwrap();
             if (resultAction.status === 'success') {
+                setUsername('');
+                setPassword('');
                 await dispatch(checkAuth()).unwrap();
                 navigate('/');
+            } else {
+                console.log('Login failed: ', resultAction.status);
             }
         } catch (err) {
             console.error('Failed to log in: ', err);
@@ -50,6 +64,9 @@ const Login: React.FC = () => {
                                     placeholder="Nhập tên đăng nhập"
                                     required
                                 />
+                                {
+                                    uError && <ErrorNotification message={uError}/>
+                                }
                             </div>
                             <div>
                                 <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900">
@@ -64,15 +81,19 @@ const Login: React.FC = () => {
                                     placeholder="••••••••"
                                     required
                                 />
+                                {
+                                    pError && <ErrorNotification message={pError}/>
+                                }
                             </div>
                             <div className="flex items-center justify-end">
                                 <a href="#" className="text-sm font-bold text-primary-600 hover:underline">
-                                    Forgot password?
+                                    Quên mật khẩu?
                                 </a>
                             </div>
                             <button type="submit"
-                                    className="w-full text-white bg-orange-500 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm py-2.5 text-center">
-                                {status === 'loading' ? 'Logging in...' : 'Login'}
+                                    className={`w-full text-white ${isButtonDisabled ? 'bg-gray-300' : 'bg-orange-500'} hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm py-2.5 text-center`}
+                                    disabled={isButtonDisabled}>
+                                {status === 'loading' ? 'Logging in...' : 'Đăng nhập'}
                             </button>
                         </form>
                     </div>
