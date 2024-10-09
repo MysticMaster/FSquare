@@ -1,13 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
-import { brandApi } from '../../api/api';
+import { categoryApi } from '../../api/api';
 
 interface thumbnail {
     url: string;
     key: string;
 }
 
-interface Brand {
+interface Category {
     _id: string;
     thumbnail: thumbnail | null;
     name: string;
@@ -27,8 +27,8 @@ interface Pagination {
     prevPage: number | null;
 }
 
-interface BrandState {
-    brands: Brand[];
+interface CategoryState {
+    categories: Category[];
     pagination: Pagination | null;
     fetchStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
     createStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -36,8 +36,8 @@ interface BrandState {
     createError: string | null;
 }
 
-const initialState: BrandState = {
-    brands: [],
+const initialState: CategoryState = {
+    categories: [],
     pagination: null,
     fetchStatus: 'idle',
     createStatus: 'idle',
@@ -45,20 +45,20 @@ const initialState: BrandState = {
     createError: null,
 };
 
-export const fetchBrands = createAsyncThunk(
-    'brands/fetchBrands',
+export const fetchCategories = createAsyncThunk(
+    'categories/fetchCategories',
     async ({ page = 1, size = 5 }: { page?: number; size?: number }) => {
-        const response = await axiosClient.get(brandApi.getAll, {
+        const response = await axiosClient.get(categoryApi.getAll, {
             params: { page, size },
         });
-        return response.data; // Giả định rằng dữ liệu bao gồm cả brands và pagination
+        return response.data; // Giả định rằng dữ liệu bao gồm cả categories và pagination
     }
 );
-export const createBrand = createAsyncThunk<Brand, FormData, { rejectValue: { error: string } }>(
-    'brands/createBrand',
-    async (brandData, { rejectWithValue }) => {
+export const createCategory = createAsyncThunk<Category, FormData, { rejectValue: { error: string } }>(
+    'categories/createCategory',
+    async (categoryData, { rejectWithValue }) => {
         try {
-            const response = await axiosClient.post(brandApi.create, brandData, {
+            const response = await axiosClient.post(categoryApi.create, categoryData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }
@@ -66,9 +66,9 @@ export const createBrand = createAsyncThunk<Brand, FormData, { rejectValue: { er
             if (response.status === 201) {
                 return response.data.data;
             } else if (response.status === 400) {
-                return rejectWithValue({ error: 'Trống tên thương hiệu' });
+                return rejectWithValue({ error: 'Trống tên danh mục' });
             } else if (response.status === 409) {
-                return rejectWithValue({ error: 'Tên thương hiệu đã tồn tại' });
+                return rejectWithValue({ error: 'Tên danh mục đã tồn tại' });
             } else {
                 return rejectWithValue({ error: 'Sự cố máy chủ' });
             }
@@ -78,8 +78,8 @@ export const createBrand = createAsyncThunk<Brand, FormData, { rejectValue: { er
     }
 );
 
-const brandSlice = createSlice({
-    name: 'brands',
+const categorySlice = createSlice({
+    name: 'categories',
     initialState,
     reducers: {
         resetCreateStatus(state) {
@@ -88,14 +88,14 @@ const brandSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
-        // Quản lý trạng thái cho fetchBrands
+        // Quản lý trạng thái cho fetchCategories
         builder
-            .addCase(fetchBrands.pending, (state) => {
+            .addCase(fetchCategories.pending, (state) => {
                 state.fetchStatus = 'loading';
                 state.fetchError = null;  // Reset lỗi trước khi bắt đầu
             })
-            .addCase(fetchBrands.fulfilled, (state, action) => {
-                state.brands = action.payload.data || []; // Assume that data is in action.payload.data
+            .addCase(fetchCategories.fulfilled, (state, action) => {
+                state.categories = action.payload.data || []; // Assume that data is in action.payload.data
                 state.pagination = {
                     size: action.payload.options.size,
                     totalItems: action.payload.options.totalItems,
@@ -108,28 +108,28 @@ const brandSlice = createSlice({
                 }; // Assume pagination info is directly in action.payload
                 state.fetchStatus = 'succeeded';
             })
-            .addCase(fetchBrands.rejected, (state, action) => {
+            .addCase(fetchCategories.rejected, (state, action) => {
                 state.fetchStatus = 'failed';
-                state.fetchError = action.error.message || 'Failed to fetch brands';
+                state.fetchError = action.error.message || 'Failed to fetch categories';
             });
 
-        // Quản lý trạng thái cho createBrand
+        // Quản lý trạng thái cho createCategory
         builder
-            .addCase(createBrand.pending, (state) => {
+            .addCase(createCategory.pending, (state) => {
                 state.createStatus = 'loading';
                 state.createError = null;  // Reset lỗi trước khi bắt đầu
             })
-            .addCase(createBrand.fulfilled, (state, action) => {
-                state.brands.unshift(action.payload); // Thêm vào đầu mảng
+            .addCase(createCategory.fulfilled, (state, action) => {
+                state.categories.unshift(action.payload); // Thêm vào đầu mảng
                 state.createStatus = 'succeeded';
                 state.createError = null;  // Reset lỗi
             })
-            .addCase(createBrand.rejected, (state, action) => {
+            .addCase(createCategory.rejected, (state, action) => {
                 state.createStatus = 'failed';
                 // Gán lỗi từ rejectWithValue nếu có
                 state.createError = action.payload?.error || 'Failed to create brand';
             });
     }
 });
-export const { resetCreateStatus } = brandSlice.actions;
-export default brandSlice.reducer;
+export const { resetCreateStatus } = categorySlice.actions;
+export default categorySlice.reducer;

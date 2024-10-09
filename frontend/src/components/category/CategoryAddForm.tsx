@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {createBrand, resetCreateStatus} from "../../redux/reducers/brandSlice.ts";
+import {createCategory, resetCreateStatus} from "../../redux/reducers/categorySlice.ts";
 import { AppDispatch, RootState } from "../../redux/store.ts";
 import ErrorNotification from "../title/ErrorNotification.tsx";
 
-const BrandAddForm: React.FC = () => {
+const CategoryAddForm: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const [name, setName] = useState('');
     const [file, setThumbnail] = useState<File | null>(null);
 
-    const createError = useSelector((state: RootState) => state.brands.createError);
-    const createStatus = useSelector((state: RootState) => state.brands.createStatus);
+    const createError = useSelector((state: RootState) => state.categories.createError);
+    const createStatus = useSelector((state: RootState) => state.categories.createStatus);
 
     useEffect(() => {
         if (createStatus === "succeeded") {
-            alert('Thương hiệu đã được tạo thành công!');
+            alert('Danh mục đã được tạo thành công!');
 
             // Reset form sau khi tạo thành công
             setName('');
@@ -27,7 +27,7 @@ const BrandAddForm: React.FC = () => {
         e.preventDefault();
 
         if (!name.trim()) {
-            alert('Vui lòng nhập tên thương hiệu');
+            alert('Vui lòng nhập tên danh mục');
             return;
         }
 
@@ -40,16 +40,16 @@ const BrandAddForm: React.FC = () => {
         formData.append('name', name);
         formData.append('file', file);
 
-        dispatch(createBrand(formData));
+        dispatch(createCategory(formData));
     };
 
     const isLoading = createStatus === 'loading';
 
     return (
         <form onSubmit={handleSubmit} className="mb-4 p-4 border border-gray-300 rounded">
-            <h2 className="text-xl font-bold mb-2">Thêm Thương Hiệu Mới</h2>
+            <h2 className="text-xl font-bold mb-2">Thêm Danh Mục Mới</h2>
             <div className="mb-2">
-                <label htmlFor="name" className="block text-gray-700">Tên Thương Hiệu</label>
+                <label htmlFor="name" className="block text-gray-700">Tên Danh Mục</label>
                 <input
                     type="text"
                     id="name"
@@ -63,7 +63,7 @@ const BrandAddForm: React.FC = () => {
                 }
             </div>
             <div className="mb-2">
-                <label htmlFor="file" className="block text-gray-700">Hình Ảnh Thương Hiệu</label>
+                <label htmlFor="file" className="block text-gray-700">Hình Ảnh Danh Mục</label>
                 <input
                     type="file"
                     id="file"
@@ -74,10 +74,10 @@ const BrandAddForm: React.FC = () => {
                 />
             </div>
             <button type="submit" className="bg-blue-500 mt-1 text-white rounded p-2" disabled={isLoading}>
-                {isLoading ? 'Đang xử lý...' : 'Tạo Thương Hiệu'}
+                {isLoading ? 'Đang xử lý...' : 'Tạo Danh Mục'}
             </button>
         </form>
     );
 };
 
-export default BrandAddForm;
+export default CategoryAddForm;

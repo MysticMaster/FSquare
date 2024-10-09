@@ -5,22 +5,29 @@ import {
 } from "../../../utils/httpStatusCode.js";
 import {generateString, responseBody} from "../../../utils/generate.js";
 import {orderStatus} from "../../../utils/orderStatus.js";
-import {calculateShippingFee} from "../../../utils/ghtk.js";
+import {orderPreview} from "../../../utils/ghn.js";
 import {getSingleImage} from '../../../utils/media.js';
 import {classificationDir, thumbnailDir} from '../../../utils/directory.js';
 
 const maxAge = 86400;
 
 const getShippingFee = async (req, res) => {
-    const {province, district, totalWeight, transportMethod} = req.body;
-    if (!province || !district || !totalWeight || !transportMethod) return res.status(badRequestResponse.code)
+    const {
+        clientOrderCode, toName, toPhone, toAddress, toWardName,
+        toDistrictName, toProvinceName, codAmount, weight, content
+    } = req.body;
+    if (!clientOrderCode || !toName || !weight || !toPhone ||
+        !toAddress || !toWardName || !toDistrictName ||
+        !toProvinceName || !codAmount || !content) return res.status(badRequestResponse.code)
         .json(responseBody(badRequestResponse.status, 'All fields are required'));
     try {
-        const fee = await calculateShippingFee(province, district, totalWeight, transportMethod);
-        res.status(successResponse.status)
+        const fee = await orderPreview(clientOrderCode, toName, toPhone, toAddress, toWardName,
+            toDistrictName, toProvinceName, codAmount, weight, content);
+        res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Shipping Fee Successful',
-                fee));
+                fee
+            ));
     } catch (error) {
         console.log(`getShippingFee Error: ${error.message}`);
         res.status(internalServerErrorResponse.code)
@@ -32,33 +39,30 @@ const createOrder = async (req, res) => {
     const userId = req.user.id; // Lấy ID người dùng từ token
     const {
         order,
-        products,
+        orderItems,
     } = req.body;
-    // Kiểm tra dữ liệu đầu vào
-    if (!order || !products || products.length === 0) {
+    if (!order || !orderItems || orderItems.length === 0) {
         return res.status(badRequestResponse.code)
             .json(responseBody(badRequestResponse.status, 'All fields are required'));
     }
-    // Tạo ID đơn hàng ngẫu nhiên hoặc tự sinh
-    const orderID = `DH-${generateString(10)}`;
     try {
         // Tạo đơn hàng mới
         const newOrder = await Order.create({
             customer: userId,
-            orderID,
+            clientOrderCode: order.clientOrderCode,
             shippingAddress: order.shippingAddress,
-            products: products,
-            totalWeight: order.totalWeight,
-            totalPrice: order.totalPrice,
-            transportMethod: order.transportMethod,
-            isFreeShip: order.isFreeShip,
+            orderItems: orderItems,
+            weight: order.weight,
+            codAmount: order.codAmount,
             shippingFee: order.shippingFee,
-            notes: order.notes,
+            content: order.content,
+            isFreeShip: order.isFreeShip,
+            isPayment: order.isPayment,
+            note: order.note,
             statusTimestamps: {
-                pending: new Date(), // Ghi nhận thời gian khi đơn hàng được tạo
+                pending: new Date(),
             }
         });
-
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status, 'Order created successfully', newOrder));
     } catch (error) {
@@ -73,38 +77,44 @@ const getOrders = async (req, res) => {
     const status = req.query.status || orderStatus.pending;
 
     try {
-        const orders = await Order.find({customer: userId, status: status})
+        const orders = await Order.find({ customer: userId, status: status })
             .populate({
-                path: 'products.size',
+                path: 'orderItems.size',
                 select: '_id sizeNumber classification',
                 populate: {
                     path: 'classification',
-                    select: '_id color price thumbnail',
+                    select: '_id color price thumbnail shoes',
+                    populate: {
+                        path: 'shoes',
+                        select: '_id name',
+                    }
                 }
             })
-            .select('_id totalPrice status createdAt products')
+            .select('_id clientOrderCode codAmount shippingFee status createdAt orderItems')
             .lean();
 
         const ordersData = await Promise.all(orders.map(async (order) => {
-            const firstProduct = order.products[0]; // Lấy sản phẩm đầu tiên
+            const firstOrderItem = order.orderItems[0];
 
-            // Kiểm tra xem sản phẩm có tồn tại không
-            const productData = firstProduct ? {
-                size: firstProduct.size.sizeNumber,
-                color: firstProduct.size.classification.color,
-                price: firstProduct.size.classification.price,
-                quantity: firstProduct.quantity,
-                thumbnail: firstProduct.size.classification.thumbnail
-                    ? await getSingleImage(`${classificationDir}/${thumbnailDir}`, firstProduct.size.classification.thumbnail, maxAge)
+            const productData = firstOrderItem ? {
+                size: firstOrderItem.size.sizeNumber,
+                shoes: firstOrderItem.size.classification.shoes.name,
+                color: firstOrderItem.size.classification.color,
+                price: firstOrderItem.size.classification.price,
+                quantity: firstOrderItem.quantity,
+                thumbnail: firstOrderItem.size.classification.thumbnail
+                    ? await getSingleImage(`${classificationDir}/${thumbnailDir}`, firstOrderItem.size.classification.thumbnail, maxAge)
                     : null,
             } : null;
 
             return {
                 id: order._id,
-                totalPrice: order.totalPrice,
+                clientOrderCode: order.clientOrderCode,
+                codAmount: order.codAmount,
+                shippingFee: order.shippingFee,
                 status: order.status,
                 createdAt: order.createdAt,
-                firstProduct: productData, // Chỉ lấy thông tin sản phẩm đầu tiên
+                firstOrderItem: productData, // Chỉ lấy thông tin sản phẩm đầu tiên
             };
         }));
 
@@ -119,34 +129,35 @@ const getOrders = async (req, res) => {
 
 const getOrderById = async (req, res) => {
     const orderId = req.params.id; // Lấy orderId từ tham số URL
-
     try {
         // Tìm kiếm đơn hàng theo orderId và chỉ định các trường cần lấy
         const order = await Order.findById(orderId)
-            .select('_id orderID shippingAddress totalWeight totalPrice shippingFee transportMethod isFreeShip status statusTimestamps products')
+            .select('_id clientOrderCode shippingAddress orderItems weight codAmount shippingFee content isFreeShip isPayment note status statusTimestamps returnInfo')
             .populate({
-                path: 'products.size',
+                path: 'orderItems.size',
                 select: '_id sizeNumber classification',
                 populate: {
                     path: 'classification',
-                    select: '_id color price thumbnail',
+                    select: '_id color price thumbnail shoes',
+                    populate: {
+                        path: 'shoes',
+                        select: '_id name',
+                    }
                 }
             })
-            .lean(); // Chuyển đổi đối tượng Mongoose thành đối tượng JavaScript thuần túy
+            .lean();
 
-        // Kiểm tra xem đơn hàng có tồn tại không
         if (!order) {
-            return res.status(notFoundResponse.status).json(responseBody(notFoundResponse.status, 'Order not found'));
+            return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Order not found'));
         }
 
-        // Lấy thông tin chi tiết của sản phẩm
-        const productsData = await Promise.all(order.products.map(async (product) => {
+        const productsData = await Promise.all(order.orderItems.map(async (product) => {
             const size = product.size;
             const classification = size.classification;
-
+            const shoes = classification.shoes;
             return {
                 size: size.sizeNumber,
-                shoes: product.name,
+                shoes: shoes.name,
                 color: classification.color,
                 price: product.price,
                 quantity: product.quantity,
@@ -159,16 +170,19 @@ const getOrderById = async (req, res) => {
         // Chuẩn bị dữ liệu phản hồi
         const orderDetails = {
             id: order._id,
-            orderID: order.orderID,
+            clientOrderCode: order.clientOrderCode,
             shippingAddress: order.shippingAddress,
-            totalWeight: order.totalWeight,
-            totalPrice: order.totalPrice,
+            weight: order.weight,
+            codAmount: order.codAmount,
             shippingFee: order.shippingFee,
-            transportMethod: order.transportMethod,
+            content: order.content,
             isFreeShip: order.isFreeShip,
+            isPayment: order.isPayment,
+            note: order.note,
             status: order.status,
             statusTimestamps: order.statusTimestamps, // Lấy statusTimestamps
-            products: productsData,
+            returnInfo: order.returnInfo,
+            orderItems: productsData,
         };
 
         res.status(successResponse.code)
@@ -230,7 +244,7 @@ const deleteOrder = async (req, res) => {
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
-}
+};
 
 export default {
     getShippingFee,
