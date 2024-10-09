@@ -1,67 +1,70 @@
 import mongoose from 'mongoose';
 
+const OrderItemSchema = new mongoose.Schema({
+    size: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Size',
+        required: true
+    },
+    quantity: {
+        type: Number,
+        required: true
+    },
+    price: {
+        type: Number,
+        required: true
+    }
+}, {versionKey: false});
+
 const OrderSchema = new mongoose.Schema({
     customer: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer',
         required: true
     },
-    orderID: {
+    clientOrderCode: {
         type: String,
         required: true,
         unique: true
     },
     shippingAddress: {
-        name: {type: String, required: true}, // Tên người nhận
-        address: {type: String, required: true}, // Địa chỉ nhận hàng
-        province: {type: String, required: true}, // Tỉnh/Thành phố nhận hàng
-        district: {type: String, required: true}, // Quận/Huyện nhận hàng
-        ward: {type: String, required: true}, // Phường/Xã nhận hàng
-        tel: {type: String, required: true} // Số điện thoại người nhận
+        toName: {type: String, required: true},
+        toAddress: {type: String, required: true},
+        toProvinceName: {type: String, required: true}, // Tỉnh/Thành phố nhận hàng
+        toDistrictName: {type: String, required: true}, // Quận/Huyện nhận hàng
+        toWardName: {type: String, required: true}, // Phường/Xã nhận hàng
+        toPhone: {type: String, required: true} // Số điện thoại người nhận
     },
-    products: [{
-        size: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Size',
-            required: true
-        },
-        name: {
-            type: String,
-            required: true
-        },
-        weight: {
-            type: Number,
-            required: true
-        },
-        quantity: {
-            type: Number,
-            required: true
-        },
-        price: {
-            type: Number,
-            required: true
-        }
-    }],
-    totalWeight: {
+    orderItems: {
+        type: [OrderItemSchema],
+        required: true
+    },
+    weight: {
         type: Number,
         required: true
     },
-    totalPrice: {
+    codAmount: {
         type: Number,
         required: true
     },
-    shippingFee:{
+    shippingFee: {
         type: Number,
         required: true
     },
-    transportMethod: {
+    content:{
         type: String,
-        enum: ['road', 'fly'],
-        default: 'road'
+        required: true
     },
     isFreeShip: {
         type: Boolean,
         default: false
+    },
+    isPayment: {
+        type: Boolean,
+        default: false
+    },
+    note: {
+        type: String
     },
     status: {
         type: String,
@@ -84,12 +87,6 @@ const OrderSchema = new mongoose.Schema({
         confirmed: {type: Date},   // Thời gian khi đơn hàng ở trạng thái 'confirmed'
         cancelled: {type: Date},    // Thời gian khi đơn hàng ở trạng thái 'cancelled'
         returned: {type: Date}      // Thời gian khi đơn hàng ở trạng thái 'returned'
-    },
-    ghtkOrderID: {
-        type: String,
-    },
-    notes: {
-        type: String
     },
     returnInfo: {
         reason: {type: String}, // Lý do hoàn trả (ví dụ: sản phẩm bị lỗi, không đúng mô tả, không còn nhu cầu,...)

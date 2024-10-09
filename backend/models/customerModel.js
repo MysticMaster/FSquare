@@ -1,5 +1,20 @@
 import mongoose from 'mongoose';
 
+const AddressSchema = new mongoose.Schema({
+    address: {
+        type: String
+    },
+    wardName: {
+        type: String,
+    },
+    districtName: {
+        type: String,
+    },
+    provinceName: {
+        type: String,
+    }
+}, {versionKey: false});
+
 const CustomerSchema = new mongoose.Schema({
     firstName: {
         type: String,
@@ -28,16 +43,8 @@ const CustomerSchema = new mongoose.Schema({
         required: false,
     },
     address: {
-        type: String,
-        required: false,
-    },
-    longitude: {
-        type: Number,
-        required: false
-    },
-    latitude: {
-        type: Number,
-        required: false
+        type: [AddressSchema],
+        default: []
     },
     role: {
         type: String,

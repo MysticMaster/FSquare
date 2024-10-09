@@ -5,7 +5,7 @@ interface Thumbnail {
     key: string;
 }
 
-interface Brand {
+interface Category {
     _id: string;
     thumbnail: Thumbnail | null;
     name: string;
@@ -14,25 +14,25 @@ interface Brand {
     isActive: boolean;
 }
 
-interface BrandItemProps {
-    brand: Brand;
+interface CategoryItemProps {
+    category: Category;
 }
 
-const BrandItem: React.FC<BrandItemProps> = ({ brand }) => {
+const CategoryItem: React.FC<CategoryItemProps> = ({ category }) => {
     return (
         <tr className="hover:bg-gray-100">
             <td className="py-2 px-3 border-b border-gray-300 text-end">
                 <img
-                    src={brand.thumbnail ? brand.thumbnail.url : './logo/fsquare_dark.webp'}
-                    alt={brand.name}
+                    src={category.thumbnail ? category.thumbnail.url : './logo/fsquare_dark.webp'}
+                    alt={category.name}
                     className="w-12 h-12 object-cover rounded"
                 />
             </td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{brand.name}</td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{brand.shoesCount}</td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{new Date(brand.createdAt).toLocaleString()}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{category.name}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{category.shoesCount}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{new Date(category.createdAt).toLocaleString()}</td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
-                {brand.isActive ? (
+                {category.isActive ? (
                     <span className="text-green-500">Kinh doanh</span>
                 ) : (
                     <span className="text-red-500">Ngừng kinh doanh</span>
@@ -45,4 +45,4 @@ const BrandItem: React.FC<BrandItemProps> = ({ brand }) => {
     );
 };
 
-export default BrandItem;
+export default CategoryItem;

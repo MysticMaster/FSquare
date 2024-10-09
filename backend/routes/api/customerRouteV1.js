@@ -5,6 +5,8 @@ import bagController from "../../controllers/api/customer/bagController.js";
 import customerController from "../../controllers/api/customer/customerController.js";
 import * as authenticationController from "../../middleware/authMiddleware.js";
 import searchHistoryController from "../../controllers/api/customer/searchHistoryController.js";
+import orderController from "../../controllers/api/customer/orderController.js";
+import locationController from "../../controllers/api/customer/locationController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -57,15 +59,6 @@ const upload = multer({
  *                     phone:
  *                       type: string
  *                       example: +1234567890
- *                     address:
- *                       type: string
- *                       example: 123 Main St, Anytown, USA
- *                     longitude:
- *                       type: number
- *                       example: -73.935242
- *                     latitude:
- *                       type: number
- *                       example: 40.730610
  *       404:
  *         description: Customer not found.
  *         content:
@@ -127,24 +120,10 @@ router.get('/customers/profile', customerController.getProfile);
  *                 type: string
  *                 description: The customer's phone number.
  *                 example: 123-456-7890
- *               address:
- *                 type: string
- *                 description: The customer's address.
- *                 example: 123 Main St, Springfield, USA
  *               fcmToken:
  *                 type: string
  *                 description: The customer's Firebase Cloud Messaging token.
  *                 example: some-fcm-token
- *               longitude:
- *                 type: number
- *                 format: float
- *                 description: The customer's longitude coordinate.
- *                 example: -73.935242
- *               latitude:
- *                 type: number
- *                 format: float
- *                 description: The customer's latitude coordinate.
- *                 example: 40.730610
  *     responses:
  *       200:
  *         description: Profile updated successfully.
@@ -230,6 +209,381 @@ router.get('/customers/profile', customerController.getProfile);
  *                   example: Server error
  */
 router.patch('/customers/profile', upload.single('file'), customerController.updateProfile);
+
+/**
+ * @openapi
+ * /v1/customers/location:
+ *   get:
+ *     summary: Get Customer Address
+ *     description: Retrieves the customer's saved addresses. Requires authentication.
+ *     security:
+ *      - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved the customer's addresses.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Get address successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       address:
+ *                         type: string
+ *                         example: "123 Main St, Springfield, USA"
+ *                       wardName:
+ *                         type: string
+ *                         example: "Ward 1"
+ *                       districtName:
+ *                         type: string
+ *                         example: "District A"
+ *                       provinceName:
+ *                         type: string
+ *                         example: "Province X"
+ *       404:
+ *         description: Customer not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Account not found
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.get('/customers/location', customerController.getAddress);
+
+/**
+ * @openapi
+ * /v1/customers/location:
+ *   post:
+ *     summary: Add Customer Address
+ *     description: Adds a new address for the authenticated customer. Requires authentication.
+ *     security:
+ *      - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               address:
+ *                 type: string
+ *                 description: The customer's address.
+ *                 example: 123 Main St
+ *               wardName:
+ *                 type: string
+ *                 description: The name of the ward.
+ *                 example: Ward 5
+ *               districtName:
+ *                 type: string
+ *                 description: The name of the district.
+ *                 example: District 1
+ *               provinceName:
+ *                 type: string
+ *                 description: The name of the province.
+ *                 example: Ho Chi Minh City
+ *     responses:
+ *       200:
+ *         description: Address added successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Address added successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: 6123456789abcdef01234567
+ *                       address:
+ *                         type: string
+ *                         example: 123 Main St
+ *                       wardName:
+ *                         type: string
+ *                         example: Ward 5
+ *                       districtName:
+ *                         type: string
+ *                         example: District 1
+ *                       provinceName:
+ *                         type: string
+ *                         example: Ho Chi Minh City
+ *       400:
+ *         description: Bad request when required fields are missing.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: All fields are required
+ *       404:
+ *         description: Customer not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Account not found
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.post('/customers/location', customerController.addAddress);
+
+/**
+ * @openapi
+ * /v1/customers/location/{id}:
+ *   patch:
+ *     summary: Update Customer Address
+ *     description: Updates the customer's address based on the address ID. Requires authentication.
+ *     security:
+ *      - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the address to be updated.
+ *         schema:
+ *           type: string
+ *           example: 609c72ef1f1b2c001f31c8b7
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               address:
+ *                 type: string
+ *                 description: The new address.
+ *                 example: 123 New Street, New York, USA
+ *               wardName:
+ *                 type: string
+ *                 description: The new ward name.
+ *                 example: Downtown
+ *               districtName:
+ *                 type: string
+ *                 description: The new district name.
+ *                 example: Manhattan
+ *               provinceName:
+ *                 type: string
+ *                 description: The new province name.
+ *                 example: New York
+ *     responses:
+ *       200:
+ *         description: Address updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Address updated successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       address:
+ *                         type: string
+ *                         example: 123 New Street, New York, USA
+ *                       wardName:
+ *                         type: string
+ *                         example: Downtown
+ *                       districtName:
+ *                         type: string
+ *                         example: Manhattan
+ *                       provinceName:
+ *                         type: string
+ *                         example: New York
+ *       400:
+ *         description: Bad request when required fields are missing or invalid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Address ID is required
+ *       404:
+ *         description: Customer or address not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Account not found or Address not found
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.patch('/customers/location/:id', customerController.updateAddress);
+
+/**
+ * @openapi
+ * /v1/customers/location/{id}:
+ *   delete:
+ *     summary: Delete Customer Address
+ *     description: Deletes a customer's address by its ID. Requires authentication.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the address to be deleted.
+ *     responses:
+ *       200:
+ *         description: Address deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Address deleted successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       address:
+ *                         type: string
+ *                         example: 123 Main St, Springfield, USA
+ *                       wardName:
+ *                         type: string
+ *                         example: Ward 1
+ *                       districtName:
+ *                         type: string
+ *                         example: District 1
+ *                       provinceName:
+ *                         type: string
+ *                         example: Province 1
+ *       400:
+ *         description: Bad request when address ID is not provided or invalid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Address ID is required
+ *       404:
+ *         description: Customer or address not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Account not found or Address not found
+ *       500:
+ *         description: Server error while deleting the address.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.delete('/customers/location/:id', customerController.deleteAddress);
 
 /**
  * @openapi
@@ -1254,7 +1608,7 @@ router.post('/histories', searchHistoryController.createHistory);
  *                   type: string
  *                   example: Lỗi máy chủ
  */
-router.get('/histories',searchHistoryController.getHistories);
+router.get('/histories', searchHistoryController.getHistories);
 
 /**
  * @openapi
@@ -1312,7 +1666,7 @@ router.get('/histories',searchHistoryController.getHistories);
  *                   type: string
  *                   example: Server error
  */
-router.delete('/histpries',searchHistoryController.deleteHistories);
+router.delete('/histories', searchHistoryController.deleteHistories);
 
 /**
  * @openapi
@@ -1373,6 +1727,874 @@ router.delete('/histpries',searchHistoryController.deleteHistories);
  *                   type: string
  *                   example: "Server error"
  */
-router.delete('/histpries/:id',searchHistoryController.deleteHistory);
+router.delete('/histories/:id', searchHistoryController.deleteHistory);
+
+/**
+ * @openapi
+ * /v1/orders/fee:
+ *   post:
+ *     summary: Tính phí vận chuyển
+ *     description: Tính toán phí vận chuyển dựa trên thông tin tỉnh, quận/huyện, tổng trọng lượng đơn hàng và phương thức vận chuyển.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               province:
+ *                 type: string
+ *                 example: "Hà Nội"
+ *                 description: Tỉnh/Thành phố nơi sẽ nhận hàng
+ *               district:
+ *                 type: string
+ *                 example: "Ba Đình"
+ *                 description: Quận/Huyện nơi sẽ nhận hàng
+ *               totalWeight:
+ *                 type: number
+ *                 example: 1500
+ *                 description: Tổng trọng lượng đơn hàng (tính bằng gram)
+ *               transportMethod:
+ *                 type: string
+ *                 enum: [road, fly]
+ *                 example: "road"
+ *                 description: Phương thức vận chuyển (đường bộ hoặc đường hàng không)
+ *     responses:
+ *       200:
+ *         description: Tính toán phí vận chuyển thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Get Shipping Fee Successful"
+ *                 data:
+ *                   type: number
+ *                   example: 50000
+ *       400:
+ *         description: Thiếu thông tin cần thiết
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "All fields are required"
+ *       500:
+ *         description: Lỗi máy chủ khi tính phí vận chuyển
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.post('/orders/fee', orderController.getShippingFee);
+
+/**
+ * @openapi
+ * /v1/orders:
+ *   post:
+ *     summary: Tạo đơn hàng mới
+ *     description: Tạo một đơn hàng mới dựa trên thông tin người dùng, sản phẩm và địa chỉ giao hàng.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               order:
+ *                 type: object
+ *                 required:
+ *                   - shippingAddress
+ *                   - totalWeight
+ *                   - value
+ *                   - shippingFee
+ *                 properties:
+ *                   shippingAddress:
+ *                     type: object
+ *                     required:
+ *                       - name
+ *                       - address
+ *                       - province
+ *                       - district
+ *                       - ward
+ *                       - tel
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         description: Tên người nhận
+ *                         example: "Nguyễn Văn A"
+ *                       address:
+ *                         type: string
+ *                         description: Địa chỉ nhận hàng
+ *                         example: "123 Đường ABC"
+ *                       province:
+ *                         type: string
+ *                         description: Tỉnh/Thành phố nhận hàng
+ *                         example: "Hà Nội"
+ *                       district:
+ *                         type: string
+ *                         description: Quận/Huyện nhận hàng
+ *                         example: "Cầu Giấy"
+ *                       ward:
+ *                         type: string
+ *                         description: Phường/Xã nhận hàng
+ *                         example: "Phường Dịch Vọng"
+ *                       tel:
+ *                         type: string
+ *                         description: Số điện thoại người nhận
+ *                         example: "0123456789"
+ *                   totalWeight:
+ *                     type: number
+ *                     description: Tổng khối lượng đơn hàng
+ *                     example: 2.5
+ *                   value:
+ *                     type: number
+ *                     description: Tổng giá trị đơn hàng
+ *                     example: 500000
+ *                   shippingFee:
+ *                     type: number
+ *                     description: Phí vận chuyển
+ *                     example: 30000
+ *                   transportMethod:
+ *                     type: string
+ *                     enum: [road, fly]
+ *                     description: Phương thức vận chuyển (đường bộ hoặc hàng không)
+ *                     example: "road"
+ *                   isFreeShip:
+ *                     type: boolean
+ *                     description: Đơn hàng có miễn phí ship không
+ *                     example: false
+ *                   notes:
+ *                     type: string
+ *                     description: Ghi chú của khách hàng về đơn hàng
+ *                     example: "Giao trước 5 giờ chiều"
+ *               products:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - name
+ *                     - weight
+ *                     - quantity
+ *                     - price
+ *                   properties:
+ *                     size:
+ *                       type: string
+ *                       description: ID của kích cỡ sản phẩm
+ *                       example: "6123456789abcdef01234567"
+ *                     name:
+ *                       type: string
+ *                       description: Tên sản phẩm
+ *                       example: "Giày thể thao Nike"
+ *                     weight:
+ *                       type: number
+ *                       description: Khối lượng sản phẩm (theo kg)
+ *                       example: 1.2
+ *                     quantity:
+ *                       type: number
+ *                       description: Số lượng sản phẩm
+ *                       example: 2
+ *                     price:
+ *                       type: number
+ *                       description: Giá của sản phẩm (VNĐ)
+ *                       example: 250000
+ *     responses:
+ *       201:
+ *         description: Đơn hàng đã được tạo thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Order created successfully"
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Dữ liệu không hợp lệ hoặc thiếu thông tin.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "All fields are required"
+ *       500:
+ *         description: Lỗi máy chủ khi tạo đơn hàng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.post('/orders', orderController.createOrder);
+
+/**
+ * @openapi
+ * /v1/orders:
+ *   get:
+ *     summary: V1 - Lấy danh sách đơn hàng của khách hàng
+ *     description: Trả về danh sách các đơn hàng dựa trên ID của khách hàng đã đăng nhập và trạng thái đơn hàng. Mỗi đơn hàng sẽ bao gồm thông tin cơ bản về đơn hàng và sản phẩm đầu tiên trong danh sách sản phẩm của đơn hàng.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - pending
+ *             - processing
+ *             - shipped
+ *             - delivered
+ *             - confirmed
+ *             - cancelled
+ *             - returned
+ *         description: Trạng thái của đơn hàng cần lấy (mặc định là 'pending')
+ *     responses:
+ *       200:
+ *         description: Danh sách đơn hàng đã được lấy thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Orders retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         example: "6123456789abcdef01234567"
+ *                       value:
+ *                         type: number
+ *                         example: 1000000
+ *                       status:
+ *                         type: string
+ *                         example: "pending"
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2024-10-06T14:23:45.123Z"
+ *                       firstProduct:
+ *                         type: object
+ *                         properties:
+ *                           size:
+ *                             type: string
+ *                             example: "42"
+ *                           color:
+ *                             type: string
+ *                             example: "Black"
+ *                           price:
+ *                             type: number
+ *                             example: 500000
+ *                           quantity:
+ *                             type: number
+ *                             example: 1
+ *                           thumbnail:
+ *                             type: string
+ *                             example: "https://example.com/images/product-thumbnail.jpg"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi lấy danh sách đơn hàng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.get('/orders', orderController.getOrders);
+
+/**
+ * @openapi
+ * /v1/orders/{id}:
+ *   get:
+ *     summary: Lấy thông tin chi tiết đơn hàng
+ *     description: Truy xuất chi tiết đơn hàng dựa trên ID được cung cấp. Nếu đơn hàng không tồn tại, trả về lỗi.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của đơn hàng cần lấy thông tin.
+ *     responses:
+ *       200:
+ *         description: Thông tin chi tiết đơn hàng đã được lấy thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Order details retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "6123456789abcdef01234567"
+ *                     orderID:
+ *                       type: string
+ *                       example: "ORDER-123456"
+ *                     shippingAddress:
+ *                       type: object
+ *                       properties:
+ *                         name:
+ *                           type: string
+ *                           example: "Nguyen Van A"
+ *                         address:
+ *                           type: string
+ *                           example: "123 Đường ABC"
+ *                         province:
+ *                           type: string
+ *                           example: "Hà Nội"
+ *                         district:
+ *                           type: string
+ *                           example: "Quận 1"
+ *                         ward:
+ *                           type: string
+ *                           example: "Phường 1"
+ *                         tel:
+ *                           type: string
+ *                           example: "0123456789"
+ *                     totalWeight:
+ *                       type: number
+ *                       example: 2.5
+ *                     value:
+ *                       type: number
+ *                       example: 1500000
+ *                     shippingFee:
+ *                       type: number
+ *                       example: 50000
+ *                     transportMethod:
+ *                       type: string
+ *                       enum: [road, fly]
+ *                       example: "road"
+ *                     isFreeShip:
+ *                       type: boolean
+ *                       example: false
+ *                     status:
+ *                       type: string
+ *                       enum: [pending, processing, shipped, delivered, confirmed, cancelled, returned]
+ *                       example: "pending"
+ *                     statusTimestamps:
+ *                       type: object
+ *                       properties:
+ *                         pending:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-10-06T12:00:00Z"
+ *                         processing:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-10-06T13:00:00Z"
+ *                         shipped:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-10-06T14:00:00Z"
+ *                         delivered:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-10-06T15:00:00Z"
+ *                         confirmed:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-10-06T16:00:00Z"
+ *                         cancelled:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-10-06T17:00:00Z"
+ *                         returned:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2024-10-06T18:00:00Z"
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           size:
+ *                             type: number
+ *                             example: 42
+ *                           shoes:
+ *                             type: string
+ *                             example: "Giày thể thao XYZ"
+ *                           color:
+ *                             type: string
+ *                             example: "Đỏ"
+ *                           price:
+ *                             type: number
+ *                             example: 500000
+ *                           quantity:
+ *                             type: number
+ *                             example: 2
+ *                           thumbnail:
+ *                             type: string
+ *                             example: "https://example.com/image.jpg"
+ *       404:
+ *         description: Không tìm thấy đơn hàng với ID đã cho.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Order not found"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi lấy thông tin đơn hàng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.get('/orders/:id', orderController.getOrderById);
+
+/**
+ * @openapi
+ * /v1/orders/{id}:
+ *   patch:
+ *     summary: V1 - Cập nhật trạng thái đơn hàng
+ *     description: # Cập nhật trạng thái của một đơn hàng dựa trên ID được cung cấp.
+ *                  # Chỉ cho phép cập nhật các trạng thái: confirmed, cancelled, returned.
+ *                  # Nếu đơn hàng không tồn tại, trả về lỗi.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của đơn hàng cần cập nhật trạng thái.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               newStatus:
+ *                 type: string
+ *                 enum: [confirmed, cancelled, returned]
+ *                 description: Trạng thái mới của đơn hàng.
+ *             required:
+ *               - newStatus
+ *     responses:
+ *       200:
+ *         description: Trạng thái đơn hàng đã được cập nhật thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Order status updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "6123456789abcdef01234567"
+ *                     status:
+ *                       type: string
+ *                       example: "confirmed"
+ *                     # thêm các thuộc tính khác của đơn hàng nếu cần
+ *       400:
+ *         description: Yêu cầu không hợp lệ (trạng thái không hợp lệ).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid status"
+ *       404:
+ *         description: Không tìm thấy đơn hàng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Order not found"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi cập nhật trạng thái đơn hàng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.patch('/orders/:id', orderController.updateOrderStatus);
+
+/**
+ * @openapi
+ * /v1/orders/{id}:
+ *   delete:
+ *     summary: V1 - Xóa một đơn hàng
+ *     description: Xóa một đơn hàng dựa trên ID được cung cấp. Nếu đơn hàng không tồn tại, trả về lỗi.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của đơn hàng cần xóa.
+ *     responses:
+ *       200:
+ *         description: Đơn hàng đã được cập nhật trạng thái thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Order status updated successfully"
+ *                 data:
+ *                   type: string
+ *                   example: "6123456789abcdef01234567"  # Đây là ID của đơn hàng đã xóa.
+ *       404:
+ *         description: Không tìm thấy đơn hàng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Order not found"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi xóa đơn hàng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.delete('/orders/:id', orderController.deleteOrder);
+
+/**
+ * @openapi
+ * /v1/locations/provinces:
+ *   get:
+ *     summary: Lấy danh sách các tỉnh
+ *     description: Trả về danh sách tất cả các tỉnh có sẵn. Nếu không có tỉnh nào, trả về lỗi.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách các tỉnh được lấy thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Provinces retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       provinceID:
+ *                         type: integer
+ *                         example: 269
+ *                       provinceName:
+ *                         type: string
+ *                         example: "Lào Cai"
+ *       404:
+ *         description: Không tìm thấy tỉnh nào.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "No provinces found"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi lấy danh sách các tỉnh.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.get('/locations/provinces', locationController.getProvinces);
+
+/**
+ * @openapi
+ * /v1/locations/districts/{id}:
+ *   get:
+ *     summary: Lấy danh sách các quận/huyện theo tỉnh
+ *     description: Trả về danh sách tất cả các quận/huyện của tỉnh dựa trên `province_id` được cung cấp. Nếu không có quận/huyện nào, trả về lỗi.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của tỉnh cần lấy danh sách các quận/huyện.
+ *     responses:
+ *       200:
+ *         description: Danh sách các quận/huyện được lấy thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Districts retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       districtID:
+ *                         type: integer
+ *                         example: 123
+ *                       districtName:
+ *                         type: string
+ *                         example: "Hà Đông"
+ *       400:
+ *         description: Thiếu `province_id` trong yêu cầu.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Province ID is required"
+ *       404:
+ *         description: Không tìm thấy quận/huyện cho tỉnh đã cung cấp.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "No districts found"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi lấy danh sách các quận/huyện.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.get('/locations/districts/:id', locationController.getDistricts);
+
+/**
+ * @openapi
+ * /v1/locations/wards/{id}:
+ *   get:
+ *     summary: Lấy danh sách các phường/xã theo quận/huyện
+ *     description: Trả về danh sách tất cả các phường/xã của quận/huyện dựa trên `district_id` được cung cấp. Nếu không có phường/xã nào, trả về lỗi.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID của quận/huyện cần lấy danh sách các phường/xã.
+ *     responses:
+ *       200:
+ *         description: Danh sách các phường/xã được lấy thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: "Wards retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       wardCode:
+ *                         type: string
+ *                         example: "001"
+ *                       wardName:
+ *                         type: string
+ *                         example: "Phường Láng Hạ"
+ *       400:
+ *         description: Thiếu `district_id` trong yêu cầu.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "District ID is required"
+ *       404:
+ *         description: Không tìm thấy phường/xã cho quận/huyện đã cung cấp.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "No wards found"
+ *       500:
+ *         description: Lỗi máy chủ xảy ra khi lấy danh sách các phường/xã.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ */
+router.get('/locations/wards/:id', locationController.getWards);
 
 export default router;

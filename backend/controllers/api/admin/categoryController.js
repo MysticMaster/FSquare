@@ -8,7 +8,7 @@ import {
     createdResponse, internalServerErrorResponse, forbiddenResponse
 } from "../../../utils/httpStatusCode.js";
 import {getSingleImage, putSingleImage} from "../../../utils/media.js";
-import {categoryDir, thumbnailDir} from "../../../utils/directory.js";
+import { categoryDir, thumbnailDir} from "../../../utils/directory.js";
 import Shoes from "../../../models/shoesModel.js";
 import {deleteObjectCommand} from "../../../config/aswS3.js";
 
@@ -29,10 +29,18 @@ const createCategory = async (req, res) => {
         const category = new Category({name: name});
         if (req.file) category.thumbnail = await putSingleImage(`${categoryDir}/${thumbnailDir}`, req.file);
         await category.save();
+
+        const categoryData = await Category.findById(category._id)
+            .select('_id thumbnail name createdAt isActive').lean();
+
+        if (!categoryData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found'));
+        if (categoryData.thumbnail) categoryData.thumbnail = await getSingleImage(`${categoryDir}/${thumbnailDir}`, categoryData.thumbnail, maxAge);
+        categoryData.shoesCount = 0;
+
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status,
                 'A new category has been created',
-                category
+                categoryData
             ));
     } catch (error) {
         console.log(`createCategory ${error.message}`);

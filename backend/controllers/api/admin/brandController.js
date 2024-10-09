@@ -31,7 +31,7 @@ const createBrand = async (req, res) => {
         if (req.file) brand.thumbnail = await putSingleImage(`${brandDir}/${thumbnailDir}`, req.file);
         await brand.save();
 
-        const brandData = await Brand.findById(brand.id)
+        const brandData = await Brand.findById(brand._id)
             .select('_id thumbnail name createdAt isActive').lean();
 
         if (!brandData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));

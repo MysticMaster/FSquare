@@ -20,7 +20,7 @@ const getProfile = async (req, res) => {
     const userId = req.user.id;
     try {
         const customer = await Customer.findById(userId)
-            .select('firstName lastName email avatar birthDay phone address longitude latitude')
+            .select('firstName lastName email avatar birthDay phone')
             .lean();
 
         if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
@@ -40,19 +40,16 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     const userId = req.user.id;
-    const {firstName, lastName, birthDay, phone, address, fcmToken, longitude, latitude} = req.body;
+    const {firstName, lastName, birthDay, phone, fcmToken} = req.body;
     try {
         const customer = await Customer.findById(userId)
-            .select('firstName lastName avatar birthDay phone address fcmToken longitude latitude');
+            .select('firstName lastName avatar birthDay phone fcmToken');
         if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
         if (firstName && firstName !== '') customer.firstName = firstName;
         if (lastName && lastName !== '') customer.lastName = lastName;
         if (birthDay && birthDay !== '') customer.birthDay = birthDay;
         if (phone && phone !== '') customer.phone = phone;
-        if (address && address !== '') customer.address = address;
         if (fcmToken && fcmToken !== '') customer.lastFcmToken = fcmToken;
-        if (longitude) customer.lastLng = longitude;
-        if (latitude) customer.lastLatitude = latitude;
 
         if (req.file) {
             const newAvatar = await putSingleImage(`${customerDir}/${avatarDir}`, req.file);
@@ -73,6 +70,112 @@ const updateProfile = async (req, res) => {
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
 }
+
+const addAddress = async (req, res) => {
+    const userId = req.user.id;
+    const {address, wardName, districtName, provinceName} = req.body;
+    if (!address || !wardName || !districtName || !provinceName) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
+    try {
+        const customer = await Customer.findById(userId)
+            .select('address');
+        if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
+
+        customer.address.push({
+            address,
+            wardName,
+            districtName,
+            provinceName
+        });
+
+        await customer.save();
+
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status,
+                'Address added successfully',
+                customer.address
+            ));
+    } catch (error) {
+        console.log(`addAddress ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+};
+
+const getAddress = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const customer = await Customer.findById(userId)
+            .select('address').lean();
+        if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
+
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status,
+                'Get address successfully',
+                customer.address || []
+            ));
+    } catch (error) {
+        console.log(`getAddress ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+}
+
+const updateAddress = async (req, res) => {
+    const userId = req.user.id;
+    const addressId = req.params.id;
+    if (!addressId) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Address ID is required'));
+    const {address, wardName, districtName, provinceName} = req.body;
+
+    try {
+        const customer = await Customer.findById(userId).select('address');
+        if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
+        const addressItem = customer.address.id(addressId);
+        if (!addressItem) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Address not found'));
+
+        addressItem.address = address || addressItem.address;
+        addressItem.wardName = wardName || addressItem.wardName;
+        addressItem.districtName = districtName || addressItem.districtName;
+        addressItem.provinceName = provinceName || addressItem.provinceName;
+
+        await customer.save();
+
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status,
+                'Address updated successfully',
+                customer.address
+            ));
+    } catch (error) {
+        console.log(`updateAddress ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+};
+
+const deleteAddress = async (req, res) => {
+    const userId = req.user.id;
+    const addressId = req.params.id;
+    if (!addressId) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Address ID is required'));
+
+    try {
+        const customer = await Customer.findById(userId).select('address');
+        if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
+        const addressItem = customer.address.id(addressId);
+        if (!addressItem) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Address not found'));
+
+        customer.address.pull({ _id: addressId });
+
+        await customer.save();
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status,
+                'Address deleted successfully',
+                customer.address
+            ));
+    } catch (error) {
+        console.log(`deleteAddress ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+};
 
 const otpAuthentication = async (req, res) => {
     const userId = req.user.id;
@@ -168,6 +271,10 @@ const pinAuthentication = async (req, res) => {
 export default {
     getProfile,
     updateProfile,
+    addAddress,
+    getAddress,
+    updateAddress,
+    deleteAddress,
     otpAuthentication,
     otpVerification,
     updatePinCode,

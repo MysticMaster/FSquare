@@ -1,22 +1,23 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchBrands} from '../redux/reducers/brandSlice';
+import {fetchCategories} from '../redux/reducers/categorySlice';
 import {RootState, AppDispatch} from '../redux/store';
-import BrandItem from "../components/brand/BrandItem";
-import BrandForm from "../components/brand/BrandAddForm";
+import CategoryItem from "../components/category/CategoryItem";
+import CategoryForm from "../components/category/CategoryAddForm";
 
-const Brand: React.FC = () => {
+const Category: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const brands = useSelector((state: RootState) => state.brands.brands);
-    const pagination = useSelector((state: RootState) => state.brands.pagination);
-    const fetchStatus = useSelector((state: RootState) => state.brands.fetchStatus);
+    const categories = useSelector((state: RootState) => state.categories.categories);
+    const pagination = useSelector((state: RootState) => state.categories.pagination);
+    const fetchStatus = useSelector((state: RootState) => state.categories.fetchStatus);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(5); // Mặc định là 5
 
     useEffect(() => {
-        dispatch(fetchBrands({ page: currentPage, size: pageSize }));
+        dispatch(fetchCategories({ page: currentPage, size: pageSize }));
     }, [currentPage, pageSize, dispatch]);
+
 
     const handleNextPage = () => {
         if (pagination?.hasNextPage) {
@@ -38,14 +39,14 @@ const Brand: React.FC = () => {
     return (
         <div className="ps-3 pt-3 bg-gray-100">
             <div className="bg-white rounded-ss-xl p-3">
-                <h1 className="text-2xl font-bold mb-4">Quản lý thương hiệu</h1>
-                <BrandForm/> {/* Hiển thị form thêm thương hiệu mới */}
+                <h1 className="text-2xl font-bold mb-4">Quản lý danh mục</h1>
+                <CategoryForm/> {/* Hiển thị form thêm danh mục mới */}
                 {fetchStatus === 'loading' && <div className="text-lg">Loading...</div>}
                 <table className="min-w-full border border-gray-300 rounded-lg">
                     <thead>
                     <tr>
                         <th className="py-3 px-3 border-b border-gray-300 text-end"></th>
-                        <th className="py-3 px-3 border-b border-gray-300 text-end">Tên thương hiệu</th>
+                        <th className="py-3 px-3 border-b border-gray-300 text-end">Tên danh mục</th>
                         <th className="py-3 px-3 border-b border-gray-300 text-end">Số giày có</th>
                         <th className="py-3 px-3 border-b border-gray-300 text-end">Thời gian tạo</th>
                         <th className="py-3 px-3 border-b border-gray-300 text-end">Trạng thái</th>
@@ -53,13 +54,13 @@ const Brand: React.FC = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {brands && brands.length > 0 ? (
-                        brands.map((brand) => (
-                            <BrandItem key={brand._id} brand={brand}/>
+                    {categories && categories.length > 0 ? (
+                        categories.map((category) => (
+                            <CategoryItem key={category._id} category={category}/>
                         ))
                     ) : (
                         <tr>
-                            <td colSpan={6} className="text-center py-2">No brands available.</td>
+                            <td colSpan={6} className="text-center py-2">No categories available.</td>
                         </tr>
                     )}
                     </tbody>
@@ -105,4 +106,4 @@ const Brand: React.FC = () => {
     );
 };
 
-export default Brand;
+export default Category;
