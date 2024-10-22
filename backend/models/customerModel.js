@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
 const AddressSchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: false
+    },
     address: {
         type: String
     },
@@ -12,6 +16,9 @@ const AddressSchema = new mongoose.Schema({
     },
     provinceName: {
         type: String,
+    },
+    isDefault: {
+        type: Boolean,
     }
 }, {versionKey: false});
 
