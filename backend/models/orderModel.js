@@ -6,6 +6,11 @@ const OrderItemSchema = new mongoose.Schema({
         ref: 'Size',
         required: true
     },
+    shoes:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Shoes',
+        required: true
+    },
     quantity: {
         type: Number,
         required: true

@@ -237,6 +237,9 @@ router.patch('/customers/profile', upload.single('file'), customerController.upd
  *                   items:
  *                     type: object
  *                     properties:
+ *                       title:
+ *                         type: string
+ *                         example: "Nhà riêng"
  *                       address:
  *                         type: string
  *                         example: "123 Main St, Springfield, USA"
@@ -248,7 +251,10 @@ router.patch('/customers/profile', upload.single('file'), customerController.upd
  *                         example: "District A"
  *                       provinceName:
  *                         type: string
- *                         example: "Province X"
+ *                         example: "Province X"  # Removed the comma here
+ *                       isDefault:
+ *                         type: boolean
+ *                         example: true
  *       404:
  *         description: Customer not found.
  *         content:
@@ -293,6 +299,10 @@ router.get('/customers/location', customerController.getAddress);
  *           schema:
  *             type: object
  *             properties:
+ *               title:
+ *                 type: string
+ *                 description: nhãn của địa chỉ
+ *                 example: Nhà riêng
  *               address:
  *                 type: string
  *                 description: The customer's address.
@@ -331,6 +341,9 @@ router.get('/customers/location', customerController.getAddress);
  *                       _id:
  *                         type: string
  *                         example: 6123456789abcdef01234567
+ *                       title:
+ *                         type: string
+ *                         example: nhà riêng
  *                       address:
  *                         type: string
  *                         example: 123 Main St
@@ -408,6 +421,10 @@ router.post('/customers/location', customerController.addAddress);
  *           schema:
  *             type: object
  *             properties:
+ *               title:
+ *                 type: string
+ *                 description: nhãn của địa chỉ
+ *                 example: Nhà riêng
  *               address:
  *                 type: string
  *                 description: The new address.
@@ -424,6 +441,10 @@ router.post('/customers/location', customerController.addAddress);
  *                 type: string
  *                 description: The new province name.
  *                 example: New York
+ *               isDefault:
+ *                 type: boolean
+ *                 description: mặc định
+ *                 example: true
  *     responses:
  *       200:
  *         description: Address updated successfully.
@@ -443,6 +464,9 @@ router.post('/customers/location', customerController.addAddress);
  *                   items:
  *                     type: object
  *                     properties:
+ *                       title:
+ *                         type: string
+ *                         example: Công ty
  *                       address:
  *                         type: string
  *                         example: 123 New Street, New York, USA
@@ -455,6 +479,9 @@ router.post('/customers/location', customerController.addAddress);
  *                       provinceName:
  *                         type: string
  *                         example: New York
+ *                       isDefault:
+ *                          type: boolean
+ *                          example: true
  *       400:
  *         description: Bad request when required fields are missing or invalid.
  *         content:
@@ -1734,7 +1761,7 @@ router.delete('/histories/:id', searchHistoryController.deleteHistory);
  * /v1/orders/fee:
  *   post:
  *     summary: Tính phí vận chuyển
- *     description: Tính toán phí vận chuyển dựa trên thông tin tỉnh, quận/huyện, tổng trọng lượng đơn hàng và phương thức vận chuyển.
+ *     description: Tính toán phí vận chuyển dựa trên thông tin địa chỉ nhận hàng, tổng trọng lượng đơn hàng và mã đơn hàng.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -1744,23 +1771,46 @@ router.delete('/histories/:id', searchHistoryController.deleteHistory);
  *           schema:
  *             type: object
  *             properties:
- *               province:
+ *               clientOrderCode:
+ *                 type: string
+ *                 example: "ORD123456"
+ *                 description: Mã đơn hàng của khách hàng
+ *               toName:
+ *                 type: string
+ *                 example: "Nguyễn Văn A"
+ *                 description: Tên người nhận
+ *               toPhone:
+ *                 type: string
+ *                 example: "0123456789"
+ *                 description: Số điện thoại người nhận
+ *               toAddress:
+ *                 type: string
+ *                 example: "Số 123, đường ABC"
+ *                 description: Địa chỉ nhận hàng
+ *               toWardName:
+ *                 type: string
+ *                 example: "Phường Định Công"
+ *                 description: Tên phường xã nơi nhận hàng
+ *               toDistrictName:
+ *                 type: string
+ *                 example: "Quận Hoàng Mai"
+ *                 description: Tên quận huyện nơi nhận hàng
+ *               toProvinceName:
  *                 type: string
  *                 example: "Hà Nội"
- *                 description: Tỉnh/Thành phố nơi sẽ nhận hàng
- *               district:
- *                 type: string
- *                 example: "Ba Đình"
- *                 description: Quận/Huyện nơi sẽ nhận hàng
- *               totalWeight:
+ *                 description: Tên tỉnh thành nơi nhận hàng
+ *               codAmount:
+ *                 type: number
+ *                 example: 200000
+ *                 description: Số tiền thu hộ
+ *               weight:
  *                 type: number
  *                 example: 1500
  *                 description: Tổng trọng lượng đơn hàng (tính bằng gram)
- *               transportMethod:
+ *               content:
  *                 type: string
- *                 enum: [road, fly]
- *                 example: "road"
- *                 description: Phương thức vận chuyển (đường bộ hoặc đường hàng không)
+ *                 example: "Đơn hàng giày dép"
+ *                 description: Nội dung đơn hàng
  *     responses:
  *       200:
  *         description: Tính toán phí vận chuyển thành công
@@ -1826,76 +1876,82 @@ router.post('/orders/fee', orderController.getShippingFee);
  *                 type: object
  *                 required:
  *                   - shippingAddress
- *                   - totalWeight
- *                   - value
+ *                   - weight
+ *                   - codAmount
  *                   - shippingFee
+ *                   - content
+ *                   - isFreeShip
+ *                   - isPayment
  *                 properties:
  *                   shippingAddress:
  *                     type: object
  *                     required:
- *                       - name
- *                       - address
- *                       - province
- *                       - district
- *                       - ward
- *                       - tel
+ *                       - toName
+ *                       - toAddress
+ *                       - toProvinceName
+ *                       - toDistrictName
+ *                       - toWardName
+ *                       - toPhone
  *                     properties:
- *                       name:
+ *                       toName:
  *                         type: string
  *                         description: Tên người nhận
  *                         example: "Nguyễn Văn A"
- *                       address:
+ *                       toAddress:
  *                         type: string
  *                         description: Địa chỉ nhận hàng
  *                         example: "123 Đường ABC"
- *                       province:
+ *                       toProvinceName:
  *                         type: string
  *                         description: Tỉnh/Thành phố nhận hàng
  *                         example: "Hà Nội"
- *                       district:
+ *                       toDistrictName:
  *                         type: string
  *                         description: Quận/Huyện nhận hàng
  *                         example: "Cầu Giấy"
- *                       ward:
+ *                       toWardName:
  *                         type: string
  *                         description: Phường/Xã nhận hàng
  *                         example: "Phường Dịch Vọng"
- *                       tel:
+ *                       toPhone:
  *                         type: string
  *                         description: Số điện thoại người nhận
  *                         example: "0123456789"
- *                   totalWeight:
+ *                   weight:
  *                     type: number
  *                     description: Tổng khối lượng đơn hàng
  *                     example: 2.5
- *                   value:
+ *                   codAmount:
  *                     type: number
- *                     description: Tổng giá trị đơn hàng
+ *                     description: Tổng tiền thu hộ
  *                     example: 500000
  *                   shippingFee:
  *                     type: number
  *                     description: Phí vận chuyển
  *                     example: 30000
- *                   transportMethod:
+ *                   content:
  *                     type: string
- *                     enum: [road, fly]
- *                     description: Phương thức vận chuyển (đường bộ hoặc hàng không)
- *                     example: "road"
+ *                     description: Nội dung đơn hàng
+ *                     example: "Giao hàng nhanh chóng"
  *                   isFreeShip:
  *                     type: boolean
  *                     description: Đơn hàng có miễn phí ship không
  *                     example: false
- *                   notes:
+ *                   isPayment:
+ *                     type: boolean
+ *                     description: Đơn hàng đã thanh toán chưa
+ *                     example: true
+ *                   note:
  *                     type: string
  *                     description: Ghi chú của khách hàng về đơn hàng
  *                     example: "Giao trước 5 giờ chiều"
- *               products:
+ *               orderItems:
  *                 type: array
  *                 items:
  *                   type: object
  *                   required:
- *                     - name
- *                     - weight
+ *                     - size
+ *                     - shoes
  *                     - quantity
  *                     - price
  *                   properties:
@@ -1903,14 +1959,10 @@ router.post('/orders/fee', orderController.getShippingFee);
  *                       type: string
  *                       description: ID của kích cỡ sản phẩm
  *                       example: "6123456789abcdef01234567"
- *                     name:
+ *                     shoes:
  *                       type: string
- *                       description: Tên sản phẩm
- *                       example: "Giày thể thao Nike"
- *                     weight:
- *                       type: number
- *                       description: Khối lượng sản phẩm (theo kg)
- *                       example: 1.2
+ *                       description: ID của sản phẩm
+ *                       example: "6123456789abcdef01989664"
  *                     quantity:
  *                       type: number
  *                       description: Số lượng sản phẩm
@@ -1935,6 +1987,74 @@ router.post('/orders/fee', orderController.getShippingFee);
  *                   example: "Order created successfully"
  *                 data:
  *                   type: object
+ *                   properties:
+ *                     customer:
+ *                       type: string
+ *                       description: ID khách hàng
+ *                       example: "6123456789abcdef01234567"
+ *                     clientOrderCode:
+ *                       type: string
+ *                       example: "ORD123456"
+ *                     shippingAddress:
+ *                       type: object
+ *                       description: Địa chỉ giao hàng
+ *                       properties:
+ *                         toName:
+ *                           type: string
+ *                           example: "Nguyễn Văn A"
+ *                         toAddress:
+ *                           type: string
+ *                           example: "123 Đường ABC"
+ *                         toProvinceName:
+ *                           type: string
+ *                           example: "Hà Nội"
+ *                         toDistrictName:
+ *                           type: string
+ *                           example: "Cầu Giấy"
+ *                         toWardName:
+ *                           type: string
+ *                           example: "Phường Dịch Vọng"
+ *                         toPhone:
+ *                           type: string
+ *                           example: "0123456789"
+ *                     orderItems:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           size:
+ *                             type: string
+ *                             example: "6123456789abcdef01234567"
+ *                           shoes:
+ *                             type: string
+ *                             example: "6123456789abcdef01989664"
+ *                           quantity:
+ *                             type: number
+ *                             example: 2
+ *                           price:
+ *                             type: number
+ *                             example: 250000
+ *                     weight:
+ *                       type: number
+ *                       example: 2.5
+ *                     codAmount:
+ *                       type: number
+ *                       example: 500000
+ *                     shippingFee:
+ *                       type: number
+ *                       example: 30000
+ *                     content:
+ *                       type: string
+ *                       example: "Giao hàng nhanh chóng"
+ *                     isFreeShip:
+ *                       type: boolean
+ *                       example: false
+ *                     isPayment:
+ *                       type: boolean
+ *                       example: true
+ *                     note:
+ *                       type: string
+ *                       example: "Giao trước 5 giờ chiều"
  *       400:
  *         description: Dữ liệu không hợp lệ hoặc thiếu thông tin.
  *         content:
@@ -1985,7 +2105,16 @@ router.post('/orders', orderController.createOrder);
  *             - confirmed
  *             - cancelled
  *             - returned
- *         description: Trạng thái của đơn hàng cần lấy (mặc định là 'pending')
+ *         description: |
+ *           Trạng thái của đơn hàng cần lấy (mặc định là 'pending').
+ *           Các trạng thái có thể có:
+ *           - **pending**: Đơn hàng đã được tạo nhưng chưa xử lý.
+ *           - **processing**: Đơn hàng đang được xử lý.
+ *           - **shipped**: Đơn hàng đã được giao cho đơn vị vận chuyển.
+ *           - **delivered**: Đơn hàng đã được giao cho khách hàng.
+ *           - **confirmed**: Đơn hàng đã được khách hàng xác nhận đã nhận.
+ *           - **cancelled**: Đơn hàng đã bị hủy.
+ *           - **returned**: Đơn hàng đã được trả lại.
  *     responses:
  *       200:
  *         description: Danh sách đơn hàng đã được lấy thành công
@@ -2219,9 +2348,13 @@ router.get('/orders/:id', orderController.getOrderById);
  * /v1/orders/{id}:
  *   patch:
  *     summary: V1 - Cập nhật trạng thái đơn hàng
- *     description: # Cập nhật trạng thái của một đơn hàng dựa trên ID được cung cấp.
- *                  # Chỉ cho phép cập nhật các trạng thái: confirmed, cancelled, returned.
- *                  # Nếu đơn hàng không tồn tại, trả về lỗi.
+ *     description: |
+ *       Cập nhật trạng thái của một đơn hàng dựa trên ID được cung cấp.
+ *       Chỉ cho phép cập nhật các trạng thái:
+ *       - **confirmed**: Đơn hàng đã được khách hàng xác nhận đã nhận.
+ *       - **cancelled**: Đơn hàng đã bị hủy.
+ *       - **returned**: Đơn hàng đã được trả lại.
+ *       Nếu đơn hàng không tồn tại, trả về lỗi.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -2241,7 +2374,10 @@ router.get('/orders/:id', orderController.getOrderById);
  *               newStatus:
  *                 type: string
  *                 enum: [confirmed, cancelled, returned]
- *                 description: Trạng thái mới của đơn hàng.
+ *                 description: # Trạng thái mới của đơn hàng. Có thể là:
+ *                              #- **confirmed**
+ *                              #- **cancelled**
+ *                              #- **returned**
  *             required:
  *               - newStatus
  *     responses:

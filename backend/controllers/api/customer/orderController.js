@@ -8,6 +8,7 @@ import {orderStatus} from "../../../utils/orderStatus.js";
 import {orderPreview} from "../../../utils/ghn.js";
 import {getSingleImage} from '../../../utils/media.js';
 import {classificationDir, thumbnailDir} from '../../../utils/directory.js';
+import Statistical from "../../../models/statisticalModel.js";
 
 const maxAge = 86400;
 
@@ -195,15 +196,34 @@ const getOrderById = async (req, res) => {
 };
 
 const updateOrderStatus = async (req, res) => {
-    const {newStatus} = req.body;
+    const { newStatus } = req.body;
+
     // Chỉ cho phép các trạng thái được xác định
     const allowedStatuses = [orderStatus.confirmed, orderStatus.cancelled, orderStatus.returned];
+
     // Kiểm tra trạng thái mới
     if (!newStatus || !allowedStatuses.includes(newStatus)) {
         return res.status(badRequestResponse.code)
             .json(responseBody(badRequestResponse.status, 'Invalid status'));
     }
+
     try {
+        // Tìm đơn hàng
+        const order = await Order.findById(req.params.id).populate('orderItems.shoes');
+
+        // Kiểm tra nếu đơn hàng không tồn tại
+        if (!order) {
+            return res.status(notFoundResponse.code)
+                .json(responseBody(notFoundResponse.status, 'Order not found'));
+        }
+
+        // Tạo mới bản ghi Statistical nếu trạng thái mới là confirmed
+        if (newStatus === orderStatus.confirmed) {
+            for (const item of order.orderItems) {
+                await createStatistical(item.shoes, item.quantity, item.price);
+            }
+        }
+
         // Tìm và cập nhật trạng thái đơn hàng
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
@@ -211,13 +231,9 @@ const updateOrderStatus = async (req, res) => {
                 status: newStatus,
                 [`statusTimestamps.${newStatus}`]: new Date(), // Cập nhật thời gian cho trạng thái mới
             },
-            {new: true} // Trả về tài liệu đã cập nhật
+            { new: true } // Trả về tài liệu đã cập nhật
         );
-        // Kiểm tra nếu đơn hàng không tồn tại
-        if (!updatedOrder) {
-            return res.status(notFoundResponse.code)
-                .json(responseBody(notFoundResponse.status, 'Order not found'));
-        }
+
         // Trả về phản hồi thành công
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Order status updated successfully', updatedOrder));
@@ -226,6 +242,16 @@ const updateOrderStatus = async (req, res) => {
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
+};
+
+const createStatistical = async (shoesId, quantity, price) => {
+    const revenue = quantity * price;
+
+    await Statistical.create({
+        shoes: shoesId,
+        sales:quantity,
+        revenue:revenue
+    });
 };
 
 const deleteOrder = async (req, res) => {
