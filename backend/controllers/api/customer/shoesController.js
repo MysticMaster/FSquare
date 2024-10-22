@@ -9,6 +9,7 @@ import {shoesDir, thumbnailDir} from "../../../utils/directory.js";
 import Classification from "../../../models/classificationModel.js";
 import ShoesReview from "../../../models/shoesReview.js";
 import Favorite from "../../../models/favoriteModel.js";
+import Statistical from "../../../models/statisticalModel.js";
 
 const maxAge = 86400;
 
@@ -39,6 +40,11 @@ const getShoes = async (req, res) => {
             .lean();
 
         const shoesIds = shoes.map(shoe => shoe._id);
+
+        const statisticalData = await Statistical.find({ shoes: { $in: shoesIds } })
+            .select('shoes sales')
+            .lean();
+
         const priceRanges = await Classification.aggregate([
             { $match: { shoes: { $in: shoesIds }, isActive: true } },
             {
@@ -74,6 +80,7 @@ const getShoes = async (req, res) => {
         const shoesData = await Promise.all(shoes.map(async (shoe) => {
             const priceRange = priceRanges.find(pr => pr._id.equals(shoe._id));
             const reviewInfo = reviewData.find(rd => rd._id.equals(shoe._id));
+            const statisticalInfo = statisticalData.find(sd => sd.shoes.equals(shoe._id));
 
             const shoeData = {
                 _id: shoe._id,
@@ -82,6 +89,7 @@ const getShoes = async (req, res) => {
                 maxPrice: priceRange ? priceRange.maxPrice : 0,
                 rating: reviewInfo ? reviewInfo.avgRating.toFixed(1) : 0,
                 reviewCount: reviewInfo ? reviewInfo.reviewCount : 0,
+                sales: statisticalInfo ? statisticalInfo.sales : 0,
                 // Chỉ kiểm tra yêu thích nếu `customerId` tồn tại
                 isFavorite: customerId ? favoriteShoesIds.includes(shoe._id.toString()) : false
             };
