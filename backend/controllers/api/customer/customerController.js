@@ -73,20 +73,23 @@ const updateProfile = async (req, res) => {
 
 const addAddress = async (req, res) => {
     const userId = req.user.id;
-    const {address, wardName, districtName, provinceName} = req.body;
+    const {title,address, wardName, districtName, provinceName} = req.body;
     if (!address || !wardName || !districtName || !provinceName) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
     try {
         const customer = await Customer.findById(userId)
             .select('address');
         if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
 
-        customer.address.push({
-            address,
-            wardName,
-            districtName,
-            provinceName
-        });
+        const newAddress = {
+            title:title,
+            address:address,
+            wardName:wardName,
+            districtName:districtName,
+            provinceName:provinceName,
+            isDefault: customer.address.length === 0 // Đặt isDefault là true nếu đây là địa chỉ đầu tiên
+        };
 
+        customer.address.push(newAddress);
         await customer.save();
 
         res.status(successResponse.code)
@@ -124,7 +127,7 @@ const updateAddress = async (req, res) => {
     const userId = req.user.id;
     const addressId = req.params.id;
     if (!addressId) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Address ID is required'));
-    const {address, wardName, districtName, provinceName} = req.body;
+    const {title,address, wardName, districtName, provinceName, isDefault} = req.body;
 
     try {
         const customer = await Customer.findById(userId).select('address');
@@ -132,10 +135,22 @@ const updateAddress = async (req, res) => {
         const addressItem = customer.address.id(addressId);
         if (!addressItem) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Address not found'));
 
+        addressItem.title = title || addressItem.title;
         addressItem.address = address || addressItem.address;
         addressItem.wardName = wardName || addressItem.wardName;
         addressItem.districtName = districtName || addressItem.districtName;
         addressItem.provinceName = provinceName || addressItem.provinceName;
+
+        if (isDefault) {
+            customer.address.forEach((addr) => {
+                if (addr.id !== addressId) {
+                    addr.isDefault = false;
+                }
+            });
+            addressItem.isDefault = true; // Đặt địa chỉ hiện tại thành mặc định
+        } else {
+            addressItem.isDefault = false; // Nếu isDefault không được gửi, đặt địa chỉ hiện tại thành không mặc định
+        }
 
         await customer.save();
 
