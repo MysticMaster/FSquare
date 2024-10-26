@@ -50,8 +50,8 @@ const createCategory = async (req, res) => {
 }
 
 const getCategories = async (req, res) => {
-    const sizePage = parseInt(req.query.size, 10) || 5;
-    const currentPage = parseInt(req.query.page, 10) || 1;
+    const sizePage = parseInt(req.query.size, 10);
+    const currentPage = parseInt(req.query.page, 10);
     const searchQuery = req.query.search || '';
 
     try {

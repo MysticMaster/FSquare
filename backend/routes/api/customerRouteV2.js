@@ -273,6 +273,9 @@ router.get('/categories', categoryController.getCategories);
  *                       reviewCount:
  *                         type: integer
  *                         example: 50
+ *                       sales:
+ *                         type: integer
+ *                         example: 100
  *                       isFavorite:
  *                         type: boolean
  *                         example: true

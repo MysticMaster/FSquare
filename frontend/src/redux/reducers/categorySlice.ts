@@ -2,14 +2,14 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
 import { categoryApi } from '../../api/api';
 
-interface thumbnail {
+interface Thumbnail {
     url: string;
     key: string;
 }
 
 interface Category {
     _id: string;
-    thumbnail: thumbnail | null;
+    thumbnail: Thumbnail | null;
     name: string;
     shoesCount: number;
     createdAt: string;
@@ -47,13 +47,14 @@ const initialState: CategoryState = {
 
 export const fetchCategories = createAsyncThunk(
     'categories/fetchCategories',
-    async ({ page = 1, size = 5 }: { page?: number; size?: number }) => {
+    async ({page, size, search}: { page?: number; size?: number; search?: string }) => {
         const response = await axiosClient.get(categoryApi.getAll, {
-            params: { page, size },
+            params: { page, size, search },
         });
-        return response.data; // Giả định rằng dữ liệu bao gồm cả categories và pagination
+        return response.data;
     }
 );
+
 export const createCategory = createAsyncThunk<Category, FormData, { rejectValue: { error: string } }>(
     'categories/createCategory',
     async (categoryData, { rejectWithValue }) => {
@@ -88,14 +89,13 @@ const categorySlice = createSlice({
         },
     },
     extraReducers: (builder) => {
-        // Quản lý trạng thái cho fetchCategories
         builder
             .addCase(fetchCategories.pending, (state) => {
                 state.fetchStatus = 'loading';
                 state.fetchError = null;  // Reset lỗi trước khi bắt đầu
             })
             .addCase(fetchCategories.fulfilled, (state, action) => {
-                state.categories = action.payload.data || []; // Assume that data is in action.payload.data
+                state.categories = action.payload.data || [];
                 state.pagination = {
                     size: action.payload.options.size,
                     totalItems: action.payload.options.totalItems,
@@ -105,7 +105,7 @@ const categorySlice = createSlice({
                     hasPreviousPage: action.payload.options.hasPreviousPage,
                     nextPage: action.payload.options.nextPage,
                     prevPage: action.payload.options.prevPage
-                }; // Assume pagination info is directly in action.payload
+                };
                 state.fetchStatus = 'succeeded';
             })
             .addCase(fetchCategories.rejected, (state, action) => {
@@ -126,7 +126,6 @@ const categorySlice = createSlice({
             })
             .addCase(createCategory.rejected, (state, action) => {
                 state.createStatus = 'failed';
-                // Gán lỗi từ rejectWithValue nếu có
                 state.createError = action.payload?.error || 'Failed to create brand';
             });
     }

@@ -1,15 +1,15 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
-import { brandApi } from '../../api/api';
+import {brandApi} from '../../api/api';
 
-interface thumbnail {
+interface Thumbnail {
     url: string;
     key: string;
 }
 
 interface Brand {
     _id: string;
-    thumbnail: thumbnail | null;
+    thumbnail: Thumbnail | null;
     name: string;
     shoesCount: number;
     createdAt: string;
@@ -47,16 +47,16 @@ const initialState: BrandState = {
 
 export const fetchBrands = createAsyncThunk(
     'brands/fetchBrands',
-    async ({ page = 1, size = 5 }: { page?: number; size?: number }) => {
+    async ({page, size, search}: { page?: number; size?: number; search?: string }) => {
         const response = await axiosClient.get(brandApi.getAll, {
-            params: { page, size },
+            params: {page, size, search},
         });
         return response.data; // Giả định rằng dữ liệu bao gồm cả brands và pagination
     }
 );
 export const createBrand = createAsyncThunk<Brand, FormData, { rejectValue: { error: string } }>(
     'brands/createBrand',
-    async (brandData, { rejectWithValue }) => {
+    async (brandData, {rejectWithValue}) => {
         try {
             const response = await axiosClient.post(brandApi.create, brandData, {
                 headers: {
@@ -66,14 +66,14 @@ export const createBrand = createAsyncThunk<Brand, FormData, { rejectValue: { er
             if (response.status === 201) {
                 return response.data.data;
             } else if (response.status === 400) {
-                return rejectWithValue({ error: 'Trống tên thương hiệu' });
+                return rejectWithValue({error: 'Trống tên thương hiệu'});
             } else if (response.status === 409) {
-                return rejectWithValue({ error: 'Tên thương hiệu đã tồn tại' });
+                return rejectWithValue({error: 'Tên thương hiệu đã tồn tại'});
             } else {
-                return rejectWithValue({ error: 'Sự cố máy chủ' });
+                return rejectWithValue({error: 'Sự cố máy chủ'});
             }
         } catch (error: any) {
-            return rejectWithValue({ error: error.message || 'Sự cố không xác định' });
+            return rejectWithValue({error: error.message || 'Sự cố không xác định'});
         }
     }
 );
@@ -131,5 +131,5 @@ const brandSlice = createSlice({
             });
     }
 });
-export const { resetCreateStatus } = brandSlice.actions;
+export const {resetCreateStatus} = brandSlice.actions;
 export default brandSlice.reducer;
