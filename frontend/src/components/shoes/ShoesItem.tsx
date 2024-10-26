@@ -6,34 +6,38 @@ interface Thumbnail {
     key: string;
 }
 
-interface Category {
+interface Shoes {
     _id: string;
+    brand: string;
+    category: string;
     thumbnail: Thumbnail | null;
     name: string;
-    shoesCount: number;
+    classificationCount: number | null;
     createdAt: string;
     isActive: boolean;
 }
 
-interface CategoryItemProps {
-    category: Category;
+interface ShoesItemProps {
+    shoes: Shoes
 }
 
-const CategoryItem: React.FC<CategoryItemProps> = ({ category }) => {
+const CategoryItem: React.FC<ShoesItemProps> = ({ shoes }) => {
     return (
         <tr className="hover:bg-gray-100">
             <td className="py-2 px-3 border-b border-gray-300 text-end">
                 <img
-                    src={category.thumbnail ? category.thumbnail.url : './logo/no_pictures.png'}
-                    alt={category.name}
+                    src={shoes.thumbnail ? shoes.thumbnail.url : './logo/no_pictures.png'}
+                    alt={shoes.name}
                     className="w-12 h-12 object-cover rounded"
                 />
             </td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{category.name}</td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{category.shoesCount}</td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{formatDateTime(category.createdAt)}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoes.brand}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoes.category}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoes.name}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoes.classificationCount}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{formatDateTime(shoes.createdAt)}</td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
-                {category.isActive ? (
+                {shoes.isActive ? (
                     <span className="text-green-500">Kinh doanh</span>
                 ) : (
                     <span className="text-red-500">Ngừng kinh doanh</span>

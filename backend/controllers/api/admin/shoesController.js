@@ -84,6 +84,8 @@ const getShoes = async (req, res) => {
             const classificationCountData = classificationCounts.find(sc => sc._id.equals(shoe._id));
             const shoeData = {
                 ...shoe,
+                brand:shoe.brand.name,
+                category:shoe.category.name,
                 classificationCount: classificationCountData ? classificationCountData.count : 0
             }
 
