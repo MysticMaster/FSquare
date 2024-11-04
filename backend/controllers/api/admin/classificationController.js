@@ -15,8 +15,8 @@ import Size from "../../../models/sizeModel.js";
 const maxAge = 86400;
 
 const createClassification = async (req, res) => {
-    const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
+   // const user = req.user;
+  //  if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {shoes, color, country, price} = req.body;
     if (!shoes || !color || !country || !price) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
     if (price < 0) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Price must be greater than 0'));

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {createCategory, resetCreateStatus} from "../../redux/reducers/categorySlice.ts";
+import { createCategory, resetCreateStatus } from "../../redux/reducers/categorySlice.ts";
 import { AppDispatch, RootState } from "../../redux/store.ts";
 import ErrorNotification from "../title/ErrorNotification.tsx";
 
 const CategoryAddForm: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const [name, setName] = useState('');
-    const [file, setThumbnail] = useState<File | null>(null);
+    const [file, setFile] = useState<File | null>(null);
+    const [fileKey, setFileKey] = useState(Date.now());
 
     const createError = useSelector((state: RootState) => state.categories.createError);
     const createStatus = useSelector((state: RootState) => state.categories.createStatus);
@@ -16,12 +17,13 @@ const CategoryAddForm: React.FC = () => {
         if (createStatus === "succeeded") {
             alert('Danh mục đã được tạo thành công!');
 
-            // Reset form sau khi tạo thành công
+            // Xóa dữ liệu trong form sau khi tạo thành công
             setName('');
-            setThumbnail(null);
+            setFile(null);
+            setFileKey(Date.now()); // Cập nhật key để reset trường file
             dispatch(resetCreateStatus());
         }
-    }, [createStatus]);
+    }, [createStatus, dispatch]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -67,7 +69,8 @@ const CategoryAddForm: React.FC = () => {
                 <input
                     type="file"
                     id="file"
-                    onChange={(e) => setThumbnail(e.target.files ? e.target.files[0] : null)}
+                    key={fileKey}
+                    onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                     className="border border-gray-300 rounded w-full"
                     accept="image/*"
                     required

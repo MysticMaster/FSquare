@@ -35,7 +35,7 @@ app.use(bodyParser.json());
 
 app.use('/auth', auth);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use('/api/admin', authentication('admin'), adminRoute);
+app.use('/api/admin',authentication('admin'),  adminRoute);
 app.use('/api/customer/v1', authentication('customer'), customerRouteV1);
 app.use('/api/customer/v2', customerRouteV2);
 
