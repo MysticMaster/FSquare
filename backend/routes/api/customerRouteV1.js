@@ -3,10 +3,15 @@ import multer from 'multer';
 import favoriteController from "../../controllers/api/customer/favoriteController.js";
 import bagController from "../../controllers/api/customer/bagController.js";
 import customerController from "../../controllers/api/customer/customerController.js";
-import * as authenticationController from "../../middleware/authMiddleware.js";
 import searchHistoryController from "../../controllers/api/customer/searchHistoryController.js";
 import orderController from "../../controllers/api/customer/orderController.js";
 import locationController from "../../controllers/api/customer/locationController.js";
+import shoesController from "../../controllers/api/customer/shoesController.js";
+import brandController from "../../controllers/api/customer/brandController.js";
+import categoryController from "../../controllers/api/customer/categoryController.js";
+import classificationController from "../../controllers/api/customer/classificationController.js";
+import sizeController from "../../controllers/api/customer/sizeController.js";
+import paymentController from "../../controllers/api/customer/paymentController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -14,6 +19,15 @@ const upload = multer({
     storage: storage,
     limits: {fileSize: 25 * 1024 * 1024}
 });
+
+router.get('/brands', brandController.getBrands);
+router.get('/categories', categoryController.getCategories);
+router.get('/shoes', shoesController.getShoes);
+router.get('/shoes/:id', shoesController.getShoesById);
+router.get('/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
+router.get('/classifications/:id', classificationController.getClassificationById);
+router.get('/sizes/classifications/:id', sizeController.getSizesByIdClassification);
+router.get('/sizes/:id', sizeController.getSizeById);
 
 /**
  * @openapi
@@ -2732,5 +2746,9 @@ router.get('/locations/districts/:id', locationController.getDistricts);
  *                   example: "Server error"
  */
 router.get('/locations/wards/:id', locationController.getWards);
+
+router.post('/payments', paymentController.createPaymentURL);
+router.get('/payments', paymentController.getPayments);
+router.post('/payments/detail',paymentController.checkPayment);
 
 export default router;

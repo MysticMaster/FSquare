@@ -10,16 +10,17 @@ interface Category {
     _id: string;
     thumbnail: Thumbnail | null;
     name: string;
-    shoesCount: number;
+    shoesCount: number | null;
     createdAt: string;
     isActive: boolean;
 }
 
 interface CategoryItemProps {
     category: Category;
+    onClick: () => void
 }
 
-const CategoryItem: React.FC<CategoryItemProps> = ({ category }) => {
+const CategoryItem: React.FC<CategoryItemProps> = ({category, onClick}) => {
     return (
         <tr className="hover:bg-gray-100">
             <td className="py-2 px-3 border-b border-gray-300 text-end">
@@ -40,7 +41,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({ category }) => {
                 )}
             </td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
-                <button className="text-blue-500 hover:underline">Chi tiết</button>
+                <button className="text-blue-500 hover:underline" onClick={onClick}>Chi tiết</button>
             </td>
         </tr>
     );

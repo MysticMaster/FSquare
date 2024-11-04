@@ -16,7 +16,7 @@ const SearchBox: React.FC<SearchProps> = ({search, onSearchChange}) => {
             placeholder="Tìm kiếm theo tên..."
             value={search}
             onChange={handleInputChange}
-            className="border border-gray-300 rounded"
+            className="border border-gray-300 rounded mx-2"
         />
     );
 };

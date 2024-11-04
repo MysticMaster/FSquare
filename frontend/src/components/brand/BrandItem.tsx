@@ -17,9 +17,10 @@ interface Brand {
 
 interface BrandItemProps {
     brand: Brand;
+    onClick: () => void
 }
 
-const BrandItem: React.FC<BrandItemProps> = ({ brand }) => {
+const BrandItem: React.FC<BrandItemProps> = ({brand, onClick}) => {
     return (
         <tr className="hover:bg-gray-100">
             <td className="py-2 px-3 border-b border-gray-300 text-end">
@@ -40,7 +41,7 @@ const BrandItem: React.FC<BrandItemProps> = ({ brand }) => {
                 )}
             </td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
-                <button className="text-blue-500 hover:underline">Chi tiết</button>
+                <button className="text-blue-500 hover:underline" onClick={onClick}>Chi tiết</button>
             </td>
         </tr>
     );
