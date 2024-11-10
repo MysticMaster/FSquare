@@ -92,6 +92,16 @@ const authentication = (requiredRole) => async (req, res, next) => {
                 responseBody(unauthorizedResponse.status, 'Token has expired')
             );
         }
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(unauthorizedResponse.code).json(
+                responseBody(unauthorizedResponse.status, 'Invalid token')
+            );
+        }
+        if (error.name === 'NotBeforeError') {
+            return res.status(unauthorizedResponse.code).json(
+                responseBody(unauthorizedResponse.status, 'Token not active')
+            );
+        }
         res.status(internalServerErrorResponse.code).json(
             responseBody(internalServerErrorResponse.status, 'An unspecified exception occurred.')
         );

@@ -23,7 +23,7 @@ const getSizesByIdClassification = async (req, res) => {
 const getSizeById = async (req, res) => {
     try {
         const size = await Size.findById(req.params.id)
-            .select('_id sizeNumber quantity')
+            .select('_id sizeNumber weight quantity')
             .lean();
 
         if (!size) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found'));
