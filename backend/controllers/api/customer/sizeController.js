@@ -10,7 +10,7 @@ const getSizesByIdClassification = async (req, res) => {
         const sizes = await Size.find({
             classification: req.params.id,
             isActive: true
-        }).select('_id sizeNumber').lean();
+        }).select('_id sizeNumber weight quantity').lean();
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Get Sizes Successful',  sizes));
     } catch (error) {
@@ -20,23 +20,6 @@ const getSizesByIdClassification = async (req, res) => {
     }
 }
 
-const getSizeById = async (req, res) => {
-    try {
-        const size = await Size.findById(req.params.id)
-            .select('_id sizeNumber weight quantity')
-            .lean();
-
-        if (!size) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found'));
-        res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Get Size Successful',  size));
-    } catch (error) {
-        console.log(`getSizeById ${error.message}`);
-        res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
-    }
-}
-
 export default {
-    getSizesByIdClassification,
-    getSizeById
+    getSizesByIdClassification
 }
