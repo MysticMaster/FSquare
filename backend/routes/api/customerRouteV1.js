@@ -27,7 +27,6 @@ router.get('/shoes/:id', shoesController.getShoesById);
 router.get('/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
 router.get('/classifications/:id', classificationController.getClassificationById);
 router.get('/sizes/classifications/:id', sizeController.getSizesByIdClassification);
-router.get('/sizes/:id', sizeController.getSizeById);
 
 /**
  * @openapi
@@ -1876,9 +1875,7 @@ router.post('/orders/fee', orderController.getShippingFee);
  * /v1/orders:
  *   post:
  *     summary: Tạo đơn hàng mới
- *     description: Tạo một đơn hàng mới dựa trên thông tin người dùng, sản phẩm và địa chỉ giao hàng.
- *     security:
- *       - bearerAuth: []
+ *     description: Tạo một đơn hàng mới cho người dùng, bao gồm thông tin khách hàng, các sản phẩm (order items), địa chỉ giao hàng và các thông tin thanh toán.
  *     requestBody:
  *       required: true
  *       content:
@@ -1888,106 +1885,93 @@ router.post('/orders/fee', orderController.getShippingFee);
  *             properties:
  *               order:
  *                 type: object
- *                 required:
- *                   - shippingAddress
- *                   - weight
- *                   - codAmount
- *                   - shippingFee
- *                   - content
- *                   - isFreeShip
- *                   - isPayment
+ *                 description: Thông tin chi tiết về đơn hàng.
  *                 properties:
+ *                   clientOrderCode:
+ *                     type: string
+ *                     description: Mã đơn hàng của khách hàng.
+ *                     example: "ORD123456"
  *                   shippingAddress:
  *                     type: object
- *                     required:
- *                       - toName
- *                       - toAddress
- *                       - toProvinceName
- *                       - toDistrictName
- *                       - toWardName
- *                       - toPhone
+ *                     description: Địa chỉ giao hàng.
  *                     properties:
  *                       toName:
  *                         type: string
- *                         description: Tên người nhận
- *                         example: "Nguyễn Văn A"
+ *                         description: Tên người nhận.
+ *                         example: "Nguyen Van A"
  *                       toAddress:
  *                         type: string
- *                         description: Địa chỉ nhận hàng
- *                         example: "123 Đường ABC"
+ *                         description: Địa chỉ giao hàng.
+ *                         example: "123 Đường ABC, Quận 1"
  *                       toProvinceName:
  *                         type: string
- *                         description: Tỉnh/Thành phố nhận hàng
- *                         example: "Hà Nội"
+ *                         description: Tỉnh/Thành phố.
+ *                         example: "Hồ Chí Minh"
  *                       toDistrictName:
  *                         type: string
- *                         description: Quận/Huyện nhận hàng
- *                         example: "Cầu Giấy"
+ *                         description: Quận/Huyện.
+ *                         example: "Quận 1"
  *                       toWardName:
  *                         type: string
- *                         description: Phường/Xã nhận hàng
- *                         example: "Phường Dịch Vọng"
+ *                         description: Phường/Xã.
+ *                         example: "Phường Bến Nghé"
  *                       toPhone:
  *                         type: string
- *                         description: Số điện thoại người nhận
- *                         example: "0123456789"
+ *                         description: Số điện thoại người nhận.
+ *                         example: "0987654321"
  *                   weight:
  *                     type: number
- *                     description: Tổng khối lượng đơn hàng
- *                     example: 2.5
+ *                     description: Tổng trọng lượng của đơn hàng (tính bằng gram).
+ *                     example: 2000
  *                   codAmount:
  *                     type: number
- *                     description: Tổng tiền thu hộ
+ *                     description: Số tiền thu hộ (COD).
  *                     example: 500000
  *                   shippingFee:
  *                     type: number
- *                     description: Phí vận chuyển
+ *                     description: Phí vận chuyển.
  *                     example: 30000
  *                   content:
  *                     type: string
- *                     description: Nội dung đơn hàng
- *                     example: "Giao hàng nhanh chóng"
+ *                     description: Mô tả về sản phẩm trong đơn hàng.
+ *                     example: "Giày thể thao"
  *                   isFreeShip:
  *                     type: boolean
- *                     description: Đơn hàng có miễn phí ship không
+ *                     description: Cho biết đơn hàng có miễn phí vận chuyển hay không.
  *                     example: false
  *                   isPayment:
  *                     type: boolean
- *                     description: Đơn hàng đã thanh toán chưa
- *                     example: true
+ *                     description: Trạng thái thanh toán của đơn hàng.
+ *                     example: false
  *                   note:
  *                     type: string
- *                     description: Ghi chú của khách hàng về đơn hàng
- *                     example: "Giao trước 5 giờ chiều"
+ *                     description: Ghi chú thêm cho đơn hàng.
+ *                     example: "Giao vào buổi sáng"
  *               orderItems:
  *                 type: array
+ *                 description: Danh sách các sản phẩm trong đơn hàng.
  *                 items:
  *                   type: object
- *                   required:
- *                     - size
- *                     - shoes
- *                     - quantity
- *                     - price
  *                   properties:
  *                     size:
  *                       type: string
- *                       description: ID của kích cỡ sản phẩm
- *                       example: "6123456789abcdef01234567"
+ *                       description: ID của kích thước sản phẩm.
+ *                       example: "60d1bda49f1b2c001c8ab4ad"
  *                     shoes:
  *                       type: string
- *                       description: ID của sản phẩm
- *                       example: "6123456789abcdef01989664"
+ *                       description: ID của sản phẩm giày.
+ *                       example: "60d1bd729f1b2c001c8ab4a0"
  *                     quantity:
  *                       type: number
- *                       description: Số lượng sản phẩm
+ *                       description: Số lượng sản phẩm.
  *                       example: 2
  *                     price:
  *                       type: number
- *                       description: Giá của sản phẩm (VNĐ)
+ *                       description: Giá của mỗi sản phẩm.
  *                       example: 250000
  *     responses:
  *       201:
- *         description: Đơn hàng đã được tạo thành công.
+ *         description: Đơn hàng được tạo thành công.
  *         content:
  *           application/json:
  *             schema:
@@ -1998,39 +1982,29 @@ router.post('/orders/fee', orderController.getShippingFee);
  *                   example: success
  *                 message:
  *                   type: string
- *                   example: "Order created successfully"
+ *                   example: Order created successfully
  *                 data:
  *                   type: object
+ *                   description: Thông tin đơn hàng mới tạo.
  *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "60d2cbe469f0d901c8d0f6b2"
  *                     customer:
  *                       type: string
- *                       description: ID khách hàng
- *                       example: "6123456789abcdef01234567"
+ *                       example: "60d1b8a3f1b2c001c8ab3c9a"
  *                     clientOrderCode:
  *                       type: string
  *                       example: "ORD123456"
  *                     shippingAddress:
  *                       type: object
- *                       description: Địa chỉ giao hàng
  *                       properties:
  *                         toName:
  *                           type: string
- *                           example: "Nguyễn Văn A"
- *                         toAddress:
- *                           type: string
- *                           example: "123 Đường ABC"
- *                         toProvinceName:
- *                           type: string
- *                           example: "Hà Nội"
- *                         toDistrictName:
- *                           type: string
- *                           example: "Cầu Giấy"
- *                         toWardName:
- *                           type: string
- *                           example: "Phường Dịch Vọng"
+ *                           example: "Nguyen Van A"
  *                         toPhone:
  *                           type: string
- *                           example: "0123456789"
+ *                           example: "0987654321"
  *                     orderItems:
  *                       type: array
  *                       items:
@@ -2038,39 +2012,18 @@ router.post('/orders/fee', orderController.getShippingFee);
  *                         properties:
  *                           size:
  *                             type: string
- *                             example: "6123456789abcdef01234567"
+ *                             example: "60d1bda49f1b2c001c8ab4ad"
  *                           shoes:
  *                             type: string
- *                             example: "6123456789abcdef01989664"
+ *                             example: "60d1bd729f1b2c001c8ab4a0"
  *                           quantity:
  *                             type: number
  *                             example: 2
  *                           price:
  *                             type: number
  *                             example: 250000
- *                     weight:
- *                       type: number
- *                       example: 2.5
- *                     codAmount:
- *                       type: number
- *                       example: 500000
- *                     shippingFee:
- *                       type: number
- *                       example: 30000
- *                     content:
- *                       type: string
- *                       example: "Giao hàng nhanh chóng"
- *                     isFreeShip:
- *                       type: boolean
- *                       example: false
- *                     isPayment:
- *                       type: boolean
- *                       example: true
- *                     note:
- *                       type: string
- *                       example: "Giao trước 5 giờ chiều"
  *       400:
- *         description: Dữ liệu không hợp lệ hoặc thiếu thông tin.
+ *         description: Thiếu thông tin cần thiết (order hoặc orderItems).
  *         content:
  *           application/json:
  *             schema:
@@ -2081,7 +2034,7 @@ router.post('/orders/fee', orderController.getShippingFee);
  *                   example: error
  *                 message:
  *                   type: string
- *                   example: "All fields are required"
+ *                   example: All fields are required
  *       500:
  *         description: Lỗi máy chủ khi tạo đơn hàng.
  *         content:
@@ -2094,7 +2047,7 @@ router.post('/orders/fee', orderController.getShippingFee);
  *                   example: error
  *                 message:
  *                   type: string
- *                   example: "Server error"
+ *                   example: Server error
  */
 router.post('/orders', orderController.createOrder);
 
@@ -2747,8 +2700,245 @@ router.get('/locations/districts/:id', locationController.getDistricts);
  */
 router.get('/locations/wards/:id', locationController.getWards);
 
+/**
+ * @openapi
+ * /v1/payments:
+ *   post:
+ *     summary: Tạo URL thanh toán
+ *     description: Tạo một URL thanh toán để thực hiện giao dịch thanh toán với các thông tin bao gồm mã đơn hàng của khách hàng, số tiền thanh toán và số điện thoại của khách hàng.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               clientOrderCode:
+ *                 type: string
+ *                 description: Mã đơn hàng của khách hàng.
+ *                 example: "ORD123456"
+ *               totalAmount:
+ *                 type: integer
+ *                 description: Tổng số tiền cần thanh toán.
+ *                 example: 100000
+ *               toPhone:
+ *                 type: string
+ *                 description: Số điện thoại của khách hàng.
+ *                 example: "0123456789"
+ *     responses:
+ *       200:
+ *         description: Thành công - Trả về thông tin URL thanh toán và mã đơn hàng.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Successfully sent order
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     orderID:
+ *                       type: string
+ *                       example: "ORD123456"
+ *                     redirectUrl:
+ *                       type: string
+ *                       example: "https://paymentgateway.com/redirect"
+ *                     paymentUrl:
+ *                       type: string
+ *                       example: "https://paymentgateway.com/pay?orderId=ORD123456"
+ *       400:
+ *         description: Bad Request - Thiếu các trường bắt buộc (clientOrderCode, totalAmount, toPhone).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: All fields are required
+ *       503:
+ *         description: Service Unavailable - Phản hồi không xác định từ dịch vụ thanh toán.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Unknown response
+ *       500:
+ *         description: Server error - Lỗi khi xử lý yêu cầu trên máy chủ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
 router.post('/payments', paymentController.createPaymentURL);
+
+/**
+ * @openapi
+ * /v1/payments:
+ *   get:
+ *     summary: Lấy danh sách các khoản thanh toán
+ *     description: Lấy thông tin danh sách các khoản thanh toán từ dịch vụ thanh toán bên ngoài.
+ *     responses:
+ *       200:
+ *         description: Thành công - Trả về danh sách các khoản thanh toán.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Successfully sent order
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       orderId:
+ *                         type: string
+ *                         example: "ORD123456"
+ *                       amount:
+ *                         type: integer
+ *                         example: 100000
+ *                       status:
+ *                         type: string
+ *                         example: "Completed"
+ *                       paymentDate:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2024-11-10T14:30:00Z"
+ *       503:
+ *         description: Service Unavailable - Phản hồi không xác định từ dịch vụ thanh toán.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Unknown response
+ *       500:
+ *         description: Server error - Lỗi khi xử lý yêu cầu trên máy chủ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
 router.get('/payments', paymentController.getPayments);
-router.post('/payments/detail',paymentController.checkPayment);
+
+/**
+ * @openapi
+ * /v1/payments/detail:
+ *   post:
+ *     summary: Kiểm tra chi tiết thanh toán
+ *     description: Kiểm tra trạng thái thanh toán của một đơn hàng bằng cách sử dụng `orderId` và `clientOrderCode`.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 example: "ORD123456"
+ *               clientOrderCode:
+ *                 type: string
+ *                 example: "MRC7890"
+ *     responses:
+ *       200:
+ *         description: Trạng thái thanh toán của đơn hàng đã được kiểm tra thành công.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Order awaiting payment
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       example: processing
+ *       400:
+ *         description: Thiếu thông tin cần thiết (orderId hoặc clientOrderCode).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: All fields are required
+ *       503:
+ *         description: Service Unavailable - Phản hồi không xác định từ dịch vụ thanh toán.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Unknown response
+ *       500:
+ *         description: Server error - Lỗi khi xử lý yêu cầu trên máy chủ.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.post('/payments/detail', paymentController.checkPayment);
 
 export default router;

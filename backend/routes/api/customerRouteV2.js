@@ -326,18 +326,18 @@ router.get('/shoes', shoesController.getShoes);
  * @openapi
  * /v2/shoes/{id}:
  *   get:
- *     summary: V2 - Retrieve a specific shoe by its ID
- *     description: Fetch detailed information about a specific shoe using its ID, including brand, category, description, and ratings.
+ *     summary: V2 - Lấy thông tin chi tiết một đôi giày theo ID
+ *     description: Lấy thông tin chi tiết về một đôi giày theo ID, bao gồm thương hiệu, loại sản phẩm, mô tả, mức giá và đánh giá.
  *     parameters:
  *       - in: path
  *         name: id
  *         schema:
  *           type: string
  *         required: true
- *         description: The ID of the shoe to retrieve.
+ *         description: ID của đôi giày cần lấy thông tin.
  *     responses:
  *       200:
- *         description: A detailed object of the shoe.
+ *         description: Một đối tượng chi tiết về đôi giày.
  *         content:
  *           application/json:
  *             schema:
@@ -366,10 +366,10 @@ router.get('/shoes', shoesController.getShoes);
  *                       example: "Sneakers"
  *                     describe:
  *                       type: string
- *                       example: "A description of the shoe for marketing purposes."
+ *                       example: "Mô tả về đôi giày cho mục đích marketing."
  *                     description:
  *                       type: string
- *                       example: "This is the full description of the shoe, including materials and features."
+ *                       example: "Đây là mô tả chi tiết về đôi giày, bao gồm chất liệu và các tính năng."
  *                     thumbnail:
  *                       type: string
  *                       example: "https://example.com/images/shoes_thumbnail.jpg"
@@ -382,8 +382,17 @@ router.get('/shoes', shoesController.getShoes);
  *                     isFavorite:
  *                       type: boolean
  *                       example: true
+ *                     classificationCount:
+ *                       type: integer
+ *                       example: 3
+ *                     minPrice:
+ *                       type: number
+ *                       example: 100.0
+ *                     maxPrice:
+ *                       type: number
+ *                       example: 150.0
  *       404:
- *         description: Shoe not found
+ *         description: Không tìm thấy đôi giày
  *         content:
  *           application/json:
  *             schema:
@@ -396,7 +405,7 @@ router.get('/shoes', shoesController.getShoes);
  *                   type: string
  *                   example: Shoes not found
  *       500:
- *         description: Server error
+ *         description: Lỗi máy chủ
  *         content:
  *           application/json:
  *             schema:
@@ -548,20 +557,20 @@ router.get('/classifications/:id', classificationController.getClassificationByI
 
 /**
  * @openapi
- * /v2/sizes/classifications/{id}:
+ * /v2/sizes/classification/{id}:
  *   get:
- *     summary: V2 - Retrieve a list of sizes by classification ID
- *     description: Fetch a list of active sizes associated with a specific classification using its ID.
+ *     summary: V2 - Lấy tất cả kích thước theo classification ID
+ *     description: Lấy danh sách các kích thước theo ID của classification, chỉ bao gồm các kích thước có trạng thái hoạt động.
  *     parameters:
  *       - in: path
  *         name: id
  *         schema:
  *           type: string
  *         required: true
- *         description: The ID of the classification for which to retrieve sizes.
+ *         description: ID của classification cần lấy các kích thước.
  *     responses:
  *       200:
- *         description: A list of sizes associated with the specified classification.
+ *         description: Danh sách các kích thước theo classification.
  *         content:
  *           application/json:
  *             schema:
@@ -583,22 +592,21 @@ router.get('/classifications/:id', classificationController.getClassificationByI
  *                         example: 6123456789abcdef01234567
  *                       sizeNumber:
  *                         type: string
- *                         example: "10"
- *       404:
- *         description: Classification not found or no sizes available
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Classification not found or no sizes available
+ *                         example: "42"
+ *                       weight:
+ *                         type: number
+ *                         example: 0.5
+ *                       quantity:
+ *                         type: integer
+ *                         example: 10
+ *                       classification:
+ *                         type: string
+ *                         example: "classification_id"
+ *                       isActive:
+ *                         type: boolean
+ *                         example: true
  *       500:
- *         description: Server error
+ *         description: Lỗi máy chủ
  *         content:
  *           application/json:
  *             schema:
@@ -611,74 +619,6 @@ router.get('/classifications/:id', classificationController.getClassificationByI
  *                   type: string
  *                   example: Server error
  */
-router.get('/sizes/classifications/:id', sizeController.getSizesByIdClassification);
-
-/**
- * @openapi
- * /v2/sizes/{id}:
- *   get:
- *     summary: V2 - Retrieve a specific size by its ID
- *     description: Fetch detailed information about a specific size using its ID, including size number and quantity.
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: The ID of the size to retrieve.
- *     responses:
- *       200:
- *         description: A detailed object of the size.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 message:
- *                   type: string
- *                   example: Get Size Successful
- *                 data:
- *                   type: object
- *                   properties:
- *                     _id:
- *                       type: string
- *                       example: 6123456789abcdef01234567
- *                     sizeNumber:
- *                       type: string
- *                       example: "42"
- *                     quantity:
- *                       type: integer
- *                       example: 10
- *       404:
- *         description: Size not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Size not found
- *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: error
- *                 message:
- *                   type: string
- *                   example: Server error
- */
-router.get('/sizes/:id', sizeController.getSizeById);
+router.get('/sizes/classification/:id', sizeController.getSizesByIdClassification);
 
 export default router;
