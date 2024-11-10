@@ -24,7 +24,7 @@ const getShoes = async (req, res) => {
     try {
         const query = {
             isActive: true,
-            name: { $regex: searchQuery, $options: 'i' }
+            name: {$regex: searchQuery, $options: 'i'}
         };
         if (brandId) query.brand = brandId;
         if (categoryId) query.category = categoryId;
@@ -33,7 +33,7 @@ const getShoes = async (req, res) => {
         const totalPages = Math.ceil(totalShoes / sizePage);
 
         const shoes = await Shoes.find(query)
-            .sort({ createdAt: -1 })
+            .sort({createdAt: -1})
             .skip((currentPage - 1) * sizePage)
             .limit(sizePage)
             .select('_id thumbnail name')
@@ -41,28 +41,28 @@ const getShoes = async (req, res) => {
 
         const shoesIds = shoes.map(shoe => shoe._id);
 
-        const statisticalData = await Statistical.find({ shoes: { $in: shoesIds } })
+        const statisticalData = await Statistical.find({shoes: {$in: shoesIds}})
             .select('shoes sales')
             .lean();
 
         const priceRanges = await Classification.aggregate([
-            { $match: { shoes: { $in: shoesIds }, isActive: true } },
+            {$match: {shoes: {$in: shoesIds}, isActive: true}},
             {
                 $group: {
                     _id: "$shoes",
-                    minPrice: { $min: "$price" },
-                    maxPrice: { $max: "$price" }
+                    minPrice: {$min: "$price"},
+                    maxPrice: {$max: "$price"}
                 }
             }
         ]);
 
         const reviewData = await ShoesReview.aggregate([
-            { $match: { shoes: { $in: shoesIds }, isActive: true } },
+            {$match: {shoes: {$in: shoesIds}, isActive: true}},
             {
                 $group: {
                     _id: "$shoes",
-                    avgRating: { $avg: "$rating" },
-                    reviewCount: { $sum: 1 }
+                    avgRating: {$avg: "$rating"},
+                    reviewCount: {$sum: 1}
                 }
             }
         ]);
@@ -70,7 +70,7 @@ const getShoes = async (req, res) => {
         // Nếu `customerId` tồn tại, thực hiện các thao tác liên quan đến yêu thích
         let favoriteShoesIds = [];
         if (customerId) {
-            const favoriteData = await Favorite.find({ customer: customerId, shoes: { $in: shoesIds } })
+            const favoriteData = await Favorite.find({customer: customerId, shoes: {$in: shoesIds}})
                 .select('shoes')
                 .lean();
 
@@ -81,7 +81,6 @@ const getShoes = async (req, res) => {
             const priceRange = priceRanges.find(pr => pr._id.equals(shoe._id));
             const reviewInfo = reviewData.find(rd => rd._id.equals(shoe._id));
             const statisticalInfo = statisticalData.find(sd => sd.shoes.equals(shoe._id));
-
             const shoeData = {
                 _id: shoe._id,
                 name: shoe.name,
@@ -89,10 +88,9 @@ const getShoes = async (req, res) => {
                 maxPrice: priceRange ? priceRange.maxPrice : 0,
                 rating: reviewInfo ? reviewInfo.avgRating.toFixed(1) : 0,
                 reviewCount: reviewInfo ? reviewInfo.reviewCount : 0,
-                sales: statisticalInfo ? statisticalInfo.sales : 0,
-                // Chỉ kiểm tra yêu thích nếu `customerId` tồn tại
-                isFavorite: customerId ? favoriteShoesIds.includes(shoe._id.toString()) : false
+                sales: statisticalInfo ? statisticalInfo.sales : 0
             };
+            if (customerId) shoeData.isFavorite = customerId ? favoriteShoesIds.includes(shoe._id.toString()) : false
 
             if (shoe.thumbnail) {
                 shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoe.thumbnail, maxAge);
@@ -142,22 +140,29 @@ const getShoesById = async (req, res) => {
                 .json(responseBody(notFoundResponse.status, 'Shoes not found'));
         }
 
-        const reviewData = await ShoesReview.aggregate([
-            { $match: { shoes: { $in: [shoes._id] }, isActive: true } },
+        const priceRange = await Classification.aggregate([
+            {$match: {shoes: shoes._id, isActive: true}},
             {
                 $group: {
                     _id: "$shoes",
-                    avgRating: { $avg: "$rating" },
-                    reviewCount: { $sum: 1 }
+                    minPrice: {$min: "$price"},
+                    maxPrice: {$max: "$price"}
                 }
             }
         ]);
 
-        // Chỉ kiểm tra yêu thích nếu `customerId` tồn tại
-        let isFavorite = false;
-        if (customerId) {
-            isFavorite = await Favorite.exists({ customer: customerId, shoes: shoes._id });
-        }
+        const reviewData = await ShoesReview.aggregate([
+            {$match: {shoes: {$in: [shoes._id]}, isActive: true}},
+            {
+                $group: {
+                    _id: "$shoes",
+                    avgRating: {$avg: "$rating"},
+                    reviewCount: {$sum: 1}
+                }
+            }
+        ]);
+
+        const classificationCounts = await Classification.countDocuments({shoes: shoes._id})
 
         const shoeData = {
             _id: shoes._id,
@@ -166,10 +171,14 @@ const getShoesById = async (req, res) => {
             category: shoes.category.name,
             describe: shoes.describe,
             description: shoes.description,
+            classificationCount: classificationCounts,
+            minPrice: priceRange.length > 0 ? priceRange[0].minPrice : 0,
+            maxPrice: priceRange.length > 0 ? priceRange[0].maxPrice : 0,
             rating: reviewData.length > 0 ? reviewData[0].avgRating.toFixed(1) : 0, // Kiểm tra reviewData
             reviewCount: reviewData.length > 0 ? reviewData[0].reviewCount : 0,   // Kiểm tra reviewData
-            isFavorite: isFavorite // Sẽ luôn là false nếu `customerId` không tồn tại
         };
+
+        if (customerId) shoeData.isFavorite = !!(await Favorite.exists({customer: customerId, shoes: shoes._id}));
 
         if (shoes.thumbnail) {
             shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoes.thumbnail, maxAge);
