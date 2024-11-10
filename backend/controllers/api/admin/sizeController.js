@@ -11,10 +11,10 @@ import {
 } from "../../../utils/httpStatusCode.js";
 
 const createSize = async (req, res) => {
-    const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
-    const {classification, sizeNumber, quantity} = req.body;
-    if (!classification || !sizeNumber || !quantity) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
+   // const user = req.user;
+  //  if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
+    const {classification, sizeNumber, quantity, weight} = req.body;
+    if (!classification || !sizeNumber || !quantity || !weight) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
     if (quantity < 0) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Quantity must be greater than -1'));
     try {
         const existingSize = await Size.findOne({
@@ -25,6 +25,7 @@ const createSize = async (req, res) => {
         const size = new Size({
             classification: classification,
             sizeNumber: sizeNumber,
+            weight:weight,
             quantity: quantity
         });
         await size.save();

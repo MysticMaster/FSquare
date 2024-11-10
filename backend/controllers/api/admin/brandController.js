@@ -18,8 +18,10 @@ const createBrand = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
 
-    const {name} = req.body;
+    let {name} = req.body;
     if (!name) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Name is required'));
+
+    name = name.trim().replace(/\s+/g, ' ');
 
     try {
         const existingBrand = await Brand.findOne({
@@ -47,12 +49,14 @@ const createBrand = async (req, res) => {
 }
 
 const getBrands = async (req, res) => {
-    const sizePage = parseInt(req.query.size, 10) || 5;
-    const currentPage = parseInt(req.query.page, 10) || 1;
+    const sizePage = parseInt(req.query.size, 10);
+    const currentPage = parseInt(req.query.page, 10);
     const searchQuery = req.query.search || '';
+    const status = req.query.status;
 
     try {
         const query = {name: {$regex: searchQuery, $options: 'i'}};
+        if (status !== undefined) query.isActive = status;
         const totalBrands = await Brand.countDocuments(query);
         const totalPages = Math.ceil(totalBrands / sizePage);
 
@@ -130,7 +134,9 @@ const getBrandById = async (req, res) => {
 const updateBrand = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
-    const {name, isActive} = req.body;
+    const {isActive} = req.body;
+    let {name} = req.body;
+    name = name.trim().replace(/\s+/g, ' ');
     try {
         const brand = await Brand.findById(req.params.id)
             .select('_id thumbnail name isActive');
@@ -152,11 +158,25 @@ const updateBrand = async (req, res) => {
                 brand.thumbnail = newThumbnail;
             }
         }
+
         await brand.save();
+
+        const brandData = await Brand.findById(brand._id)
+            .select('_id thumbnail name createdAt isActive').lean();
+
+        if (!brandData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
+        if (brandData.thumbnail) brandData.thumbnail = await getSingleImage(`${brandDir}/${thumbnailDir}`, brandData.thumbnail, maxAge);
+
+        const brandCountResult = await Shoes.aggregate([
+            { $match: { brand: brandData._id } },
+            { $group: { _id: "$brand", count: { $sum: 1 } } }
+        ]);
+
+        brandData.shoesCount = brandCountResult.length > 0 ? brandCountResult[0].count : 0;
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Update Brand Successful',
-                brand
+                brandData
             ));
     } catch (error) {
         console.log(`updateBrand ${error.message}`);

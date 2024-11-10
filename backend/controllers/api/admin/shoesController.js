@@ -17,11 +17,12 @@ import Classification from "../../../models/classificationModel.js";
 const maxAge = 86400;
 
 const createShoes = async (req, res) => {
-    const user = req.user;
-    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
-    const {brand, category, name, describe, description} = req.body;
+    //  const user = req.user;
+    //  if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
+    const {brand, category, describe, description} = req.body;
+    let {name} = req.body;
     if (!brand || !category || !name || !describe) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
-
+    name = name.trim().replace(/\s+/g, ' ');
     try {
         const existingShoes = await Shoes.findOne({
             name: new RegExp(`^${name}$`, 'i'),
@@ -51,14 +52,16 @@ const createShoes = async (req, res) => {
 }
 
 const getShoes = async (req, res) => {
-    const sizePage = parseInt(req.query.size, 10) || 5;
-    const currentPage = parseInt(req.query.page, 10) || 1;
+    const sizePage = parseInt(req.query.size, 10);
+    const currentPage = parseInt(req.query.page, 10);
     const searchQuery = req.query.search || '';
     const brandId = req.query.brand || '';
     const categoryId = req.query.category || '';
+    const status = req.query.status;
 
     try {
         const query = {name: {$regex: searchQuery, $options: 'i'}};
+        if (status !== undefined) query.isActive = status;
         if (brandId) query.brand = brandId;
         if (categoryId) query.category = categoryId;
         const totalShoes = await Shoes.countDocuments(query);
@@ -84,6 +87,8 @@ const getShoes = async (req, res) => {
             const classificationCountData = classificationCounts.find(sc => sc._id.equals(shoe._id));
             const shoeData = {
                 ...shoe,
+                brand: shoe.brand.name,
+                category: shoe.category.name,
                 classificationCount: classificationCountData ? classificationCountData.count : 0
             }
 
@@ -121,9 +126,15 @@ const getShoesById = async (req, res) => {
     try {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail name describe description createdAt isActive brand category')
+            .populate('brand', 'name')
+            .populate('category', 'name')
             .lean();
         if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
-        const shoesData = {...shoes};
+        const shoesData = {
+            ...shoes,
+            brand: shoes.brand.name,
+            category: shoes.category.name,
+        };
         if (shoesData.thumbnail) shoesData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoesData.thumbnail, maxAge);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
@@ -140,7 +151,9 @@ const getShoesById = async (req, res) => {
 const updateShoes = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
-    const {name, brand, category, describe, description, isActive} = req.body;
+    const {brand, category, describe, description, isActive} = req.body;
+    let {name} = req.body;
+    name = name.trim().replace(/\s+/g, ' ');
     try {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail name brand category describe description isActive');

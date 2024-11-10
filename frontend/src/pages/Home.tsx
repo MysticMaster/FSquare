@@ -5,6 +5,7 @@ import CustomSidebar from "../components/sidebar/Sidebar.tsx";
 import Navbar from "../components/navbar/Navbar.tsx";
 import Brand from '../pages/Brand';
 import Category from "./Category.tsx";
+import Shoes from "./Shoes.tsx";
 
 const HomePage: React.FC = () => {
     const [activeItem, setActiveItem] = useState<string | null>('dashboard');
@@ -22,12 +23,14 @@ const HomePage: React.FC = () => {
 
     const renderContent = () => {
         switch (activeItem) {
-            case 'brand':
-                return <Brand/>;
             case 'dashboard':
                 return <div>Dashboard Content</div>; // Nội dung cho Dashboard
             case 'category':
                 return <Category/>; // Nội dung cho Quản lý danh mục
+            case 'brand':
+                return <Brand/>; // Nội dung cho Quản lý thương hiệu
+            case 'shoes':
+                return <Shoes/>; // Nội dung cho Quản lý danh mục
             default:
                 return (
                     <div>
@@ -63,8 +66,10 @@ const HomePage: React.FC = () => {
                     />
                 )}
                 <div className="flex-grow ">
-                    <div className="bg-gray-200 h-screen mt-16">
-                        {renderContent()}
+                    <div className="bg-gray-100 h-screen mt-16">
+                        <div className="ps-3 py-3 bg-gray-100">
+                            {renderContent()}
+                        </div>
                     </div>
                 </div>
             </div>

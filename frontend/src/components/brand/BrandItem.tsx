@@ -1,4 +1,5 @@
 import React from 'react';
+import {formatDateTime} from "../../utils/formatDateTime.ts";
 
 interface Thumbnail {
     url: string;
@@ -16,21 +17,22 @@ interface Brand {
 
 interface BrandItemProps {
     brand: Brand;
+    onClick: () => void
 }
 
-const BrandItem: React.FC<BrandItemProps> = ({ brand }) => {
+const BrandItem: React.FC<BrandItemProps> = ({brand, onClick}) => {
     return (
         <tr className="hover:bg-gray-100">
             <td className="py-2 px-3 border-b border-gray-300 text-end">
                 <img
-                    src={brand.thumbnail ? brand.thumbnail.url : './logo/fsquare_dark.webp'}
+                    src={brand.thumbnail ? brand.thumbnail.url : './logo/no_pictures.png'}
                     alt={brand.name}
                     className="w-12 h-12 object-cover rounded"
                 />
             </td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">{brand.name}</td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">{brand.shoesCount}</td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{new Date(brand.createdAt).toLocaleString()}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{formatDateTime(brand.createdAt)}</td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
                 {brand.isActive ? (
                     <span className="text-green-500">Kinh doanh</span>
@@ -39,7 +41,7 @@ const BrandItem: React.FC<BrandItemProps> = ({ brand }) => {
                 )}
             </td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
-                <button className="text-blue-500 hover:underline">Chi tiết</button>
+                <button className="text-blue-500 hover:underline" onClick={onClick}>Chi tiết</button>
             </td>
         </tr>
     );

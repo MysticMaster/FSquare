@@ -1,27 +1,37 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchCategories, resetUpdateStatus} from '../redux/reducers/categorySlice';
+import {fetchShoes} from '../redux/reducers/shoesSlice';
+import {fetchBrands} from "../redux/reducers/brandSlice";
+import {fetchCategories, resetUpdateStatus} from "../redux/reducers/categorySlice";
 import {RootState, AppDispatch} from '../redux/store';
-import CategoryItem from "../components/category/CategoryItem";
-import CategoryForm from "../components/category/CategoryAddForm";
+import ShoesItem from "../components/shoes/ShoesItem";
 import Pagination from "../components/pagination/Pagination";
 import PageSizeSelector from "../components/pagination/PageSizeSelector.tsx";
 import HomeContent from "../components/container/HomeContent.tsx";
 import SearchBox from "../components/filter/SearchBox.tsx";
 import TableOptions from "../components/container/TableOptions.tsx";
+import ShoesFilterSelector from "../components/filter/ShoesFilterSelector.tsx";
 import PageHeader from "../components/container/PageHeader.tsx";
 import Filter from "../components/button/Filter.tsx";
 import FilterContainer from "../components/container/FilterContainer.tsx";
 import StatusFilterSelector from "../components/filter/StatusFilterSelector.tsx";
-import ModalContainer from "../components/container/ModalContainer.tsx";
-import CategoryDetail from "../components/category/CategoryDetail.tsx";
 import Loading from "../components/Loading.tsx";
+import ModalContainer from "../components/container/ModalContainer.tsx";
+import ShoeDetail from "../components/shoes/ShoesDetail.tsx";
 
-const Category: React.FC = () => {
+interface Item {
+    _id: string;
+    name: string;
+}
+
+const Shoes: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
+    const shoes = useSelector((state: RootState) => state.shoes.shoes);
+    const pagination = useSelector((state: RootState) => state.shoes.pagination);
+    const fetchAllStatus = useSelector((state: RootState) => state.shoes.fetchAllStatus);
+
+    const brands = useSelector((state: RootState) => state.brands.brands);
     const categories = useSelector((state: RootState) => state.categories.categories);
-    const pagination = useSelector((state: RootState) => state.categories.pagination);
-    const fetchAllStatus = useSelector((state: RootState) => state.categories.fetchAllStatus);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(5);
@@ -30,22 +40,39 @@ const Category: React.FC = () => {
 
     const [isFilter, setIsFilters] = useState(false);
 
-    const [isModal, setIsModal] = useState(false);
+    const [isShoeModal, setIsShoeModal] = useState(false);
 
     const [id, setId] = useState<string | null>(null);
 
-    useEffect(() => {
-        dispatch(fetchCategories({page: currentPage, size: pageSize, search: searchTerm, status: status}));
-    }, [currentPage, pageSize, searchTerm, status, dispatch]);
+    const [filters, setFilters] = useState<{ brandId: string; categoryId: string }>({
+        brandId: "",
+        categoryId: ""
+    });
 
     useEffect(() => {
-        if (isModal) document.body.style.overflow = "hidden"; // Ngăn cuộn trang
+        dispatch(fetchBrands({}));
+        dispatch(fetchCategories({}));
+    }, [dispatch]);
+
+    useEffect(() => {
+        dispatch(fetchShoes({
+            page: currentPage,
+            size: pageSize,
+            search: searchTerm,
+            status: status,
+            brandId: filters.brandId,
+            categoryId: filters.categoryId
+        }));
+    }, [currentPage, pageSize, searchTerm, status, filters, dispatch]);
+
+    useEffect(() => {
+        if (isShoeModal) document.body.style.overflow = "hidden"; // Ngăn cuộn trang
         else document.body.style.overflow = "unset"; // Khôi phục cuộn trang
 
         return () => {
             document.body.style.overflow = "unset"; // Đảm bảo khôi phục trạng thái cuộn khi component bị gỡ bỏ
         };
-    }, [isModal]);
+    }, [isShoeModal]);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -61,10 +88,27 @@ const Category: React.FC = () => {
         setCurrentPage(1);
     };
 
+    const handleBrandSelect = (selectedBrand: Item | null) => {
+        setFilters(prevFilters => ({
+            ...prevFilters,
+            brandId: selectedBrand ? selectedBrand._id : ""
+        }));
+        setCurrentPage(1);
+    };
+
+    const handleCategorySelect = (selectedCategory: Item | null) => {
+        setFilters(prevFilters => ({
+            ...prevFilters,
+            categoryId: selectedCategory ? selectedCategory._id : ""
+        }));
+        setCurrentPage(1);
+    };
+
     const handleVisibleFilter = () => {
         setIsFilters(!isFilter)
         if (isFilter) {
             setStatus(null)
+            setFilters({brandId: '', categoryId: ''});
         }
     }
 
@@ -73,20 +117,20 @@ const Category: React.FC = () => {
         setCurrentPage(1);
     };
 
-    const handleDetail = (id: string) => {
+    const handleShoeDetail = (id: string) => {
         setId(id)
-        setIsModal(true)
+        setIsShoeModal(true)
     }
 
-    const handleClose = () => {
-        setIsModal(false)
+    const handleShoeClose = () => {
+        setIsShoeModal(false)
         dispatch(resetUpdateStatus());
     }
 
     return (
         <HomeContent>
-            <PageHeader title="Quản lý danh mục">
-                <CategoryForm/>
+            <PageHeader title="Quản lý giày">
+                <div></div>
             </PageHeader>
 
             <TableOptions>
@@ -99,6 +143,8 @@ const Category: React.FC = () => {
 
             <FilterContainer isVisible={isFilter}>
                 <StatusFilterSelector onItemSelect={handleStatusSelect}/>
+                <ShoesFilterSelector title="Thương hiệu" type={1} items={brands} onItemSelect={handleBrandSelect}/>
+                <ShoesFilterSelector title="Danh mục" type={2} items={categories} onItemSelect={handleCategorySelect}/>
             </FilterContainer>
 
             {
@@ -111,22 +157,23 @@ const Category: React.FC = () => {
                         <thead>
                         <tr>
                             <th className="py-3 px-3 border-b border-gray-300 text-end"></th>
-                            <th className="py-3 px-3 border-b border-gray-300 text-end">Tên danh mục</th>
-                            <th className="py-3 px-3 border-b border-gray-300 text-end">Mẫu hiện có</th>
+                            <th className="py-3 px-3 border-b border-gray-300 text-end">Thương hiệu</th>
+                            <th className="py-3 px-3 border-b border-gray-300 text-end">Danh mục</th>
+                            <th className="py-3 px-3 border-b border-gray-300 text-end">Tên giày</th>
+                            <th className="py-3 px-3 border-b border-gray-300 text-end">Phân loại</th>
                             <th className="py-3 px-3 border-b border-gray-300 text-end">Ngày tạo</th>
                             <th className="py-3 px-3 border-b border-gray-300 text-end">Trạng thái</th>
                             <th className="py-3 px-3 border-b border-gray-300 text-end"></th>
                         </tr>
                         </thead>
                         <tbody>
-                        {categories && categories.length > 0 ? (
-                            categories.map((category) => (
-                                <CategoryItem key={category._id} category={category}
-                                              onClick={() => handleDetail(category._id)}/>
+                        {shoes && shoes.length > 0 ? (
+                            shoes.map((shoe) => (
+                                <ShoesItem key={shoe._id} shoe={shoe} onClick={() => handleShoeDetail(shoe._id)}/>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={6} className="text-center italic py-2">Không có danh mục nào</td>
+                                <td colSpan={6} className="text-center italic py-2">Không có sản phẩm nào</td>
                             </tr>
                         )}
                         </tbody>
@@ -134,8 +181,8 @@ const Category: React.FC = () => {
                 )
             }
 
-            <ModalContainer isOpen={isModal} onClose={handleClose}>
-                {id !== null && <CategoryDetail id={id}/>}
+            <ModalContainer isOpen={isShoeModal} onClose={handleShoeClose}>
+                {id !== null && <ShoeDetail id={id}/>}
             </ModalContainer>
 
             <Pagination
@@ -153,6 +200,6 @@ const Category: React.FC = () => {
             />
         </HomeContent>
     );
-};
+}
 
-export default Category;
+export default Shoes;

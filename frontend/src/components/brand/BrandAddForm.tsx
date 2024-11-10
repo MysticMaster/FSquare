@@ -8,6 +8,7 @@ const BrandAddForm: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const [name, setName] = useState('');
     const [file, setThumbnail] = useState<File | null>(null);
+    const [fileKey, setFileKey] = useState(Date.now());
 
     const createError = useSelector((state: RootState) => state.brands.createError);
     const createStatus = useSelector((state: RootState) => state.brands.createStatus);
@@ -19,6 +20,7 @@ const BrandAddForm: React.FC = () => {
             // Reset form sau khi tạo thành công
             setName('');
             setThumbnail(null);
+            setFileKey(Date.now());
             dispatch(resetCreateStatus());
         }
     }, [createStatus]);
@@ -67,6 +69,7 @@ const BrandAddForm: React.FC = () => {
                 <input
                     type="file"
                     id="file"
+                    key={fileKey}
                     onChange={(e) => setThumbnail(e.target.files ? e.target.files[0] : null)}
                     className="border border-gray-300 rounded w-full"
                     accept="image/*"

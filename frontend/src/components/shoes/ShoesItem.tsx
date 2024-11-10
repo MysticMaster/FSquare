@@ -6,35 +6,39 @@ interface Thumbnail {
     key: string;
 }
 
-interface Category {
+interface Shoes {
     _id: string;
+    brand: string;
+    category: string;
     thumbnail: Thumbnail | null;
     name: string;
-    shoesCount: number | null;
+    classificationCount: number | null;
     createdAt: string;
     isActive: boolean;
 }
 
-interface CategoryItemProps {
-    category: Category;
+interface ShoesItemProps {
+    shoe: Shoes,
     onClick: () => void
 }
 
-const CategoryItem: React.FC<CategoryItemProps> = ({category, onClick}) => {
+const CategoryItem: React.FC<ShoesItemProps> = ({ shoe,onClick }) => {
     return (
         <tr className="hover:bg-gray-100">
             <td className="py-2 px-3 border-b border-gray-300 text-end">
                 <img
-                    src={category.thumbnail ? category.thumbnail.url : './logo/no_pictures.png'}
-                    alt={category.name}
+                    src={shoe.thumbnail ? shoe.thumbnail.url : './logo/no_pictures.png'}
+                    alt={shoe.name}
                     className="w-12 h-12 object-cover rounded"
                 />
             </td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{category.name}</td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{category.shoesCount}</td>
-            <td className="py-2 px-3 border-b border-gray-300 text-end">{formatDateTime(category.createdAt)}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoe.brand}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoe.category}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoe.name}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{shoe.classificationCount}</td>
+            <td className="py-2 px-3 border-b border-gray-300 text-end">{formatDateTime(shoe.createdAt)}</td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
-                {category.isActive ? (
+                {shoe.isActive ? (
                     <span className="text-green-500">Kinh doanh</span>
                 ) : (
                     <span className="text-red-500">Ngừng kinh doanh</span>
