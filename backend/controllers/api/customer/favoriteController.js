@@ -8,6 +8,7 @@ import Classification from "../../../models/classificationModel.js";
 import ShoesReview from "../../../models/shoesReview.js";
 import {getSingleImage} from "../../../utils/media.js";
 import {shoesDir, thumbnailDir} from "../../../utils/directory.js";
+import Statistical from "../../../models/statisticalModel.js";
 
 const maxAge = 86400;
 
@@ -58,6 +59,10 @@ const getFavorites = async (req, res) => {
 
         const shoesIds = favorites.map(fav => fav.shoes._id);
 
+        const statisticalData = await Statistical.find({shoes: {$in: shoesIds}})
+            .select('shoes sales')
+            .lean();
+
         const priceRanges = await Classification.aggregate([
             {$match: {shoes: {$in: shoesIds}, isActive: true}},
             {
@@ -85,7 +90,7 @@ const getFavorites = async (req, res) => {
 
             const priceRange = priceRanges.find(c => c._id.equals(shoe._id)) || {minPrice: 0, maxPrice: 0};
             const reviewInfo = reviewData.find(r => r._id.equals(shoe._id)) || {avgRating: 0, reviewCount: 0};
-
+            const statisticalInfo = statisticalData.find(sd => sd.shoes.equals(shoe._id));
             const shoesData = {
                 _id: fav._id,
                 shoesId: shoe._id,
@@ -93,7 +98,8 @@ const getFavorites = async (req, res) => {
                 minPrice: priceRange.minPrice,
                 maxPrice: priceRange.maxPrice,
                 avgRating: reviewInfo.avgRating,
-                reviewCount: reviewInfo.reviewCount
+                reviewCount: reviewInfo.reviewCount,
+                sales: statisticalInfo ? statisticalInfo.sales : 0
             };
 
             if (shoe.thumbnail) shoesData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoe.thumbnail, maxAge);

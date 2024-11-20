@@ -22,7 +22,7 @@ const generateToken = async (user, maxAge) => {
     if (user.authority) payload.authority = user.authority;
 
     try {
-        return jwt.sign(payload, process.env.SECRET_KEY, {expiresIn: maxAge});
+        return jwt.sign(payload, process.env.SECRET_KEY, {expiresIn: maxAge, algorithm: "HS256"});
     } catch (error) {
         console.error('Error creating JWT token:', error);
         throw error;
