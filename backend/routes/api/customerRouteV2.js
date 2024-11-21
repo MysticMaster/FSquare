@@ -385,6 +385,9 @@ router.get('/shoes', shoesController.getShoes);
  *                     classificationCount:
  *                       type: integer
  *                       example: 3
+ *                     sales:
+ *                       type: integer
+ *                       example: 60
  *                     minPrice:
  *                       type: number
  *                       example: 100.0
