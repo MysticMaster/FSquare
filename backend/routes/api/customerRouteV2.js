@@ -458,6 +458,9 @@ router.get('/shoes/:id', shoesController.getShoesById);
  *                       thumbnail:
  *                         type: string
  *                         example: "https://example.com/images/classification_thumbnail.jpg"
+ *                       color:
+ *                         type: string
+ *                         example: red
  *       500:
  *         description: Server error.
  *         content:

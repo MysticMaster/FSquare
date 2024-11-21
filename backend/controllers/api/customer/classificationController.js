@@ -14,7 +14,7 @@ const getClassificationsByIdShoes = async (req, res) => {
         const classifications = await Classification.find({
             shoes: req.params.id,
             isActive: true
-        }).select('_id thumbnail').lean();
+        }).select('_id thumbnail color').lean();
 
         const classificationsData = await Promise.all(classifications.map(async (classification) => {
             const classificationData = {
