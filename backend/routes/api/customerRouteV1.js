@@ -26,7 +26,7 @@ router.get('/shoes', shoesController.getShoes);
 router.get('/shoes/:id', shoesController.getShoesById);
 router.get('/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
 router.get('/classifications/:id', classificationController.getClassificationById);
-router.get('/sizes/classifications/:id', sizeController.getSizesByIdClassification);
+router.get('/sizes/classification/:id', sizeController.getSizesByIdClassification);
 
 /**
  * @openapi
