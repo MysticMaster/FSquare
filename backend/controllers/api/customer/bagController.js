@@ -159,7 +159,7 @@ const updateBagQuantity = async (req, res) => {
 };
 
 const deleteBags = async (req, res) => {
-    const userId = req.user._id;
+    const userId = req.user.id;
     try {
         await Bag.deleteMany({customer: userId});
         res.status(successResponse.code)
