@@ -11,8 +11,8 @@ import {
 } from "../../../utils/httpStatusCode.js";
 
 const createSize = async (req, res) => {
-   // const user = req.user;
-  //  if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
+    const user = req.user;
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {classification, sizeNumber, quantity, weight} = req.body;
     if (!classification || !sizeNumber || !quantity || !weight) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
     if (quantity < 0) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Quantity must be greater than -1'));
@@ -25,7 +25,7 @@ const createSize = async (req, res) => {
         const size = new Size({
             classification: classification,
             sizeNumber: sizeNumber,
-            weight:weight,
+            weight: weight,
             quantity: quantity
         });
         await size.save();
@@ -45,12 +45,14 @@ const getSizeByIdClassification = async (req, res) => {
     const sizePage = parseInt(req.query.size, 10) || 5;
     const currentPage = parseInt(req.query.page, 10) || 1;
     const searchQuery = req.query.search || '';
+    const status = req.query.status;
 
     try {
         const query = {
             classification: req.params.id,
             sizeNumber: {$regex: searchQuery, $options: 'i'}
         };
+        if (status !== undefined) query.isActive = status;
         const totalSizes = await Size.countDocuments(query);
         const totalPages = Math.ceil(totalSizes / sizePage);
 
