@@ -42,7 +42,7 @@ const Pagination: React.FC<PaginationProps> = ({ options, onPageChange }) => {
     };
 
     return (
-        <nav className="flex items-center justify-center my-4" aria-label="Page navigation example">
+        <nav className="flex items-center justify-center mt-4 mb-1">
             <ul className="flex items-center -space-x-px h-8 text-sm">
                 <li>
                     <a

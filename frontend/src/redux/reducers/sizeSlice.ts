@@ -1,32 +1,25 @@
 import {createSlice, createAsyncThunk, PayloadAction} from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
-import {shoesApi} from "../../api/api.ts";
-import stateStatus from "../../utils/stateStatus.ts";
+import {sizeApi} from "../../api/api.ts";
+import stateStatus from "../../utils/stateStatus.ts"
 
-interface Thumbnail {
-    url: string;
-    key: string;
+interface Classification {
+    _id: string;
+    color: string;
 }
 
-interface Brand {
+interface ClassificationOwn {
     _id: string;
+    color: string;
     name: string;
 }
 
-interface Category {
+interface Size {
     _id: string;
-    name: string;
-}
-
-interface Shoes {
-    _id: string;
-    brand: Brand;
-    category: Category;
-    thumbnail: Thumbnail | null;
-    name: string;
-    describe: string | null;
-    description: string | null;
-    classificationCount: number | null;
+    classification: Classification;
+    sizeNumber: number;
+    weight: number;
+    quantity: number;
     createdAt: string;
     isActive: boolean;
 }
@@ -42,9 +35,10 @@ interface Pagination {
     prevPage: number | null;
 }
 
-interface ShoesState {
-    shoes: Shoes[];
-    shoe: Shoes | null;
+interface ClassificationState {
+    classificationOwn: ClassificationOwn | null;
+    sizes: Size[];
+    size: Size | null;
     detailId: string | null;
     pagination: Pagination | null;
     fetchAllStatus: string;
@@ -57,9 +51,10 @@ interface ShoesState {
     updateError: { code: number, error: string } | null;
 }
 
-const initialState: ShoesState = {
-    shoes: [],
-    shoe: null,
+const initialState: ClassificationState = {
+    classificationOwn: null,
+    sizes: [],
+    size: null,
     detailId: null,
     pagination: null,
     fetchAllStatus: stateStatus.idleState,
@@ -72,11 +67,13 @@ const initialState: ShoesState = {
     updateError: null
 }
 
-export const createShoes = createAsyncThunk<Shoes, FormData, { rejectValue: { code: number, error: string } }>(
-    'shoes/createShoes',
-    async (shoesData, {rejectWithValue}) => {
+export const createSize = createAsyncThunk<Size, FormData, {
+    rejectValue: { code: number, error: string }
+}>(
+    'sizes/createSize',
+    async (sizeData, {rejectWithValue}) => {
         try {
-            const response = await axiosClient.post(shoesApi.create, shoesData, {
+            const response = await axiosClient.post(sizeApi.create, sizeData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -93,39 +90,37 @@ export const createShoes = createAsyncThunk<Shoes, FormData, { rejectValue: { co
     }
 );
 
-
-export const fetchShoes = createAsyncThunk(
-    'shoes/fetchShoes',
-    async ({page, size, search, status, brandId, categoryId}: {
+export const fetchSizes = createAsyncThunk(
+    'sizes/fetchSizes',
+    async ({page, size, search, status, classificationId}: {
         page?: number;
         size?: number;
         search?: string;
         status?: boolean | null;
-        brandId?: string;
-        categoryId?: string;
+        classificationId?: string;
     }) => {
-        const response = await axiosClient.get(shoesApi.getAll, {
-            params: {page, size, search, status, brand: brandId, category: categoryId},
+        const response = await axiosClient.get(`${sizeApi.getByClassificationId}/${classificationId}`, {
+            params: {page, size, search, status},
         });
         return response.data;
     }
 );
 
-export const fetchShoe = createAsyncThunk(
-    'shoes/fetchShoe',
+export const fetchSize = createAsyncThunk(
+    'sizes/fetchSize',
     async ({id}: { id?: string | null }) => {
-        const response = await axiosClient.get(`${shoesApi.getById}/${id}`);
+        const response = await axiosClient.get(`${sizeApi.getById}/${id}`);
         return response.data;
     }
 );
 
-export const updateShoes = createAsyncThunk<Shoes, { id: string; shoesData: FormData }, {
+export const updateSize = createAsyncThunk<Size, { id: string; sizeData: FormData }, {
     rejectValue: { code: number, error: string }
 }>(
-    'shoes/updateShoes',
-    async ({id, shoesData}, {rejectWithValue}) => {
+    'sizes/updateSize',
+    async ({id, sizeData}, {rejectWithValue}) => {
         try {
-            const response = await axiosClient.patch(`${shoesApi.update}/${id}`, shoesData, {
+            const response = await axiosClient.patch(`${sizeApi.update}/${id}`, sizeData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }
@@ -142,11 +137,14 @@ export const updateShoes = createAsyncThunk<Shoes, { id: string; shoesData: Form
     }
 );
 
-const shoesSlice = createSlice({
-    name: 'shoes',
+const sizeSlice = createSlice({
+    name: 'sizes',
     initialState,
     reducers: {
-        setShoesIdDetail(state, action: PayloadAction<string | null>) {
+        setClassificationOwn(state, action: PayloadAction<ClassificationOwn | null>) {
+            state.classificationOwn = action.payload;
+        },
+        setSizeDetailId(state, action: PayloadAction<string | null>) {
             state.detailId = action.payload;
         },
         resetCreateStatus(state) {
@@ -159,30 +157,30 @@ const shoesSlice = createSlice({
         }
     },
     extraReducers: (builder) => {
-        // Quản lý trạng thái cho createShoes
+        // Quản lý trạng thái cho createSize
         builder
-            .addCase(createShoes.pending, (state) => {
+            .addCase(createSize.pending, (state) => {
                 state.createStatus = stateStatus.loadingState;
                 state.createError = null;
             })
-            .addCase(createShoes.fulfilled, (state, action) => {
-                state.shoes.unshift(action.payload);
+            .addCase(createSize.fulfilled, (state, action) => {
+                state.sizes.unshift(action.payload);
                 state.createStatus = stateStatus.succeededState;
                 state.createError = null;
             })
-            .addCase(createShoes.rejected, (state, action) => {
+            .addCase(createSize.rejected, (state, action) => {
                 state.createStatus = stateStatus.failedState;
-                state.createError = action.payload || {code: 500, error: 'Sự cố không xác định'};
+                state.createError = action.payload || {code: 500, error: 'Sự cố không xác định'}
             });
 
-        // Quản lý trạng thái cho fetchShoes
+        // Quản lý trạng thái cho fetchSizes
         builder
-            .addCase(fetchShoes.pending, (state) => {
+            .addCase(fetchSizes.pending, (state) => {
                 state.fetchAllStatus = stateStatus.loadingState
                 state.fetchAllError = null;
             })
-            .addCase(fetchShoes.fulfilled, (state, action) => {
-                state.shoes = action.payload.data || [];
+            .addCase(fetchSizes.fulfilled, (state, action) => {
+                state.sizes = action.payload.data || [];
                 state.pagination = {
                     size: action.payload.options.size,
                     totalItems: action.payload.options.totalItems,
@@ -195,47 +193,50 @@ const shoesSlice = createSlice({
                 };
                 state.fetchAllStatus = stateStatus.succeededState
             })
-            .addCase(fetchShoes.rejected, (state, action) => {
+            .addCase(fetchSizes.rejected, (state, action) => {
                 state.fetchAllStatus = stateStatus.failedState
                 state.fetchAllError = action.error.message || 'Failed to fetch categories';
-            })
+            });
 
-        // Quản lý trạng thái cho fetchShoe
+        // Quản lý trạng thái cho fetchSize
         builder
-            .addCase(fetchShoe.pending, (state) => {
-                state.fetchStatus = stateStatus.loadingState
+            .addCase(fetchSize.pending, (state) => {
+                state.fetchStatus = stateStatus.loadingState;
                 state.fetchError = null;
             })
-            .addCase(fetchShoe.fulfilled, (state, action) => {
-                state.shoe = action.payload.data || null;
-                state.fetchStatus = stateStatus.succeededState
+            .addCase(fetchSize.fulfilled, (state, action) => {
+                state.size = action.payload.data || null;
+                state.fetchStatus = stateStatus.succeededState;
             })
-            .addCase(fetchShoe.rejected, (state, action) => {
+            .addCase(fetchSize.rejected, (state, action) => {
                 state.fetchStatus = stateStatus.failedState
                 state.fetchError = action.error.message || 'Failed to fetch category';
             });
 
-        // Quản lý trạng thái cho updateShoes
+        // Quản lý trạng thái cho updateSize
         builder
-            .addCase(updateShoes.pending, (state) => {
+            .addCase(updateSize.pending, (state) => {
                 state.updateStatus = stateStatus.loadingState;
-                state.updateError = null
+                state.updateError = null;
             })
-            .addCase(updateShoes.fulfilled, (state, action) => {
-                const index = state.shoes.findIndex(shoe => shoe._id === action.payload._id);
-                if (index !== -1) state.shoes[index] = action.payload;
+            .addCase(updateSize.fulfilled, (state, action) => {
+                const index = state.sizes.findIndex(size => size._id === action.payload._id);
+                if (index !== -1) state.sizes[index] = action.payload;
                 state.updateStatus = stateStatus.succeededState
                 state.updateError = null
             })
-            .addCase(updateShoes.rejected, (state, action) => {
+            .addCase(updateSize.rejected, (state, action) => {
                 state.updateStatus = stateStatus.failedState
                 state.updateError = action.payload || {code: 500, error: 'Sự cố không xác định'};
             });
     }
 });
+
 export const {
-    setShoesIdDetail,
+    setClassificationOwn,
+    setSizeDetailId,
     resetCreateStatus,
     resetUpdateStatus
-} = shoesSlice.actions;
-export default shoesSlice.reducer;
+} = sizeSlice.actions;
+
+export default sizeSlice.reducer;

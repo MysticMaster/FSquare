@@ -17,12 +17,16 @@ interface Brand {
 
 interface BrandItemProps {
     brand: Brand;
-    onClick: () => void
+    onClick: () => void;
+    onSelect: () => void;
+    isSelected: boolean;
 }
 
-const BrandItem: React.FC<BrandItemProps> = ({brand, onClick}) => {
+const BrandItem: React.FC<BrandItemProps> = ({brand, onClick, onSelect, isSelected}) => {
+
     return (
-        <tr className="hover:bg-gray-100">
+        <tr className={isSelected ? "bg-blue-100" : "hover:bg-gray-100"}
+            onClick={onSelect}>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
                 <img
                     src={brand.thumbnail ? brand.thumbnail.url : './logo/no_pictures.png'}
@@ -41,7 +45,11 @@ const BrandItem: React.FC<BrandItemProps> = ({brand, onClick}) => {
                 )}
             </td>
             <td className="py-2 px-3 border-b border-gray-300 text-end">
-                <button className="text-blue-500 hover:underline" onClick={onClick}>Chi tiết</button>
+                <button className="text-blue-500 hover:underline" onClick={() => {
+                    onClick();
+                    onSelect();
+                }}>Chi tiết
+                </button>
             </td>
         </tr>
     );

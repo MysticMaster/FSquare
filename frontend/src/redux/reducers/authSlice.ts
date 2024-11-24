@@ -45,12 +45,12 @@ export const login = createAsyncThunk<{ authority: string; status: string }, { u
             } else if (response.status === 409) {
                 return rejectWithValue({pError: 'Mật khẩu không đúng'});
             } else {
-                throw new Error('Login failed');
+                throw new Error('LoginPage failed');
             }
         } catch (error: unknown) {
             console.log(error);
             if (error instanceof Error) {
-                return rejectWithValue({uError: 'Login failed', pError: 'Login failed'});
+                return rejectWithValue({uError: 'LoginPage failed', pError: 'LoginPage failed'});
             }
             return rejectWithValue({uError: 'Unable to login', pError: 'Unable to login'});
         }

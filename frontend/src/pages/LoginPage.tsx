@@ -5,7 +5,7 @@ import {RootState, AppDispatch} from '../redux/store';
 import {useNavigate} from 'react-router-dom';
 import ErrorNotification from "../components/title/ErrorNotification.tsx";
 
-const Login: React.FC = () => {
+const LoginPage: React.FC = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isButtonDisabled, setIsButtonDisabled] = useState(false);
@@ -31,7 +31,7 @@ const Login: React.FC = () => {
                 await dispatch(checkAuth()).unwrap();
                 navigate('/');
             } else {
-                console.log('Login failed: ', resultAction.status);
+                console.log('LoginPage failed: ', resultAction.status);
             }
         } catch (err) {
             console.error('Failed to log in: ', err);
@@ -103,4 +103,4 @@ const Login: React.FC = () => {
     );
 };
 
-export default Login;
+export default LoginPage;

@@ -2,9 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createCategory, resetCreateStatus } from "../../redux/reducers/categorySlice.ts";
 import { AppDispatch, RootState } from "../../redux/store.ts";
-import ErrorNotification from "../title/ErrorNotification.tsx";
+import ErrorNotification from "../../components/title/ErrorNotification.tsx";
 
-const CategoryAddForm: React.FC = () => {
+interface Props {
+    onAddSuccess: () => void;
+}
+
+const CategoryAddForm: React.FC<Props> = ({onAddSuccess}) => {
     const dispatch = useDispatch<AppDispatch>();
     const [name, setName] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -17,13 +21,13 @@ const CategoryAddForm: React.FC = () => {
         if (createStatus === "succeeded") {
             alert('Danh mục đã được tạo thành công!');
 
-            // Xóa dữ liệu trong form sau khi tạo thành công
             setName('');
             setFile(null);
-            setFileKey(Date.now()); // Cập nhật key để reset trường file
+            setFileKey(Date.now());
             dispatch(resetCreateStatus());
+            onAddSuccess()
         }
-    }, [createStatus, dispatch]);
+    }, [createStatus,onAddSuccess, dispatch]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -33,14 +37,9 @@ const CategoryAddForm: React.FC = () => {
             return;
         }
 
-        if (!file) {
-            alert('Vui lòng chọn hình ảnh');
-            return;
-        }
-
         const formData = new FormData();
         formData.append('name', name);
-        formData.append('file', file);
+        if(file) formData.append('file', file);
 
         dispatch(createCategory(formData));
     };
@@ -73,7 +72,6 @@ const CategoryAddForm: React.FC = () => {
                     onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
                     className="border border-gray-300 rounded w-full"
                     accept="image/*"
-                    required
                 />
             </div>
             <button type="submit" className="bg-blue-500 mt-1 text-white rounded p-2" disabled={isLoading}>
