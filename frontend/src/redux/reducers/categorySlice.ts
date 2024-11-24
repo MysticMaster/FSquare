@@ -1,6 +1,7 @@
-import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
+import {createSlice, createAsyncThunk, PayloadAction} from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
 import {categoryApi} from '../../api/api';
+import stateStatus from "../../utils/stateStatus.ts";
 
 interface Thumbnail {
     url: string;
@@ -30,11 +31,12 @@ interface Pagination {
 interface CategoryState {
     categories: Category[];
     category: Category | null;
+    detailId: string | null;
     pagination: Pagination | null;
-    fetchAllStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
-    fetchStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
-    createStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
-    updateStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+    fetchAllStatus: string;
+    fetchStatus: string;
+    createStatus: string;
+    updateStatus: string;
     fetchAllError: string | null;
     fetchError: string | null;
     createError: string | null;
@@ -44,11 +46,12 @@ interface CategoryState {
 const initialState: CategoryState = {
     categories: [],
     category: null,
+    detailId: null,
     pagination: null,
-    fetchAllStatus: 'idle',
-    fetchStatus: 'idle',
-    createStatus: 'idle',
-    updateStatus: 'idle',
+    fetchAllStatus: stateStatus.idleState,
+    fetchStatus: stateStatus.idleState,
+    createStatus: stateStatus.idleState,
+    updateStatus: stateStatus.idleState,
     fetchAllError: null,
     fetchError: null,
     createError: null,
@@ -133,12 +136,15 @@ const categorySlice = createSlice({
     name: 'categories',
     initialState,
     reducers: {
+        setCategoryIdDetail(state, action: PayloadAction<string | null>) {
+            state.detailId = action.payload;
+        },
         resetCreateStatus(state) {
-            state.createStatus = 'idle'; // Reset trạng thái về idle
+            state.createStatus = stateStatus.idleState;
             state.createError = null; // Reset lỗi
         },
         resetUpdateStatus(state) {
-            state.updateStatus = 'idle';
+            state.updateStatus = stateStatus.idleState;
             state.updateError = null;
         }
     },
@@ -146,23 +152,23 @@ const categorySlice = createSlice({
         // Quản lý trạng thái cho createCategory
         builder
             .addCase(createCategory.pending, (state) => {
-                state.createStatus = 'loading';
-                state.createError = null;  // Reset lỗi trước khi bắt đầu
+                state.createStatus = stateStatus.loadingState;
+                state.createError = null;
             })
             .addCase(createCategory.fulfilled, (state, action) => {
                 state.categories.unshift(action.payload); // Thêm vào đầu mảng
-                state.createStatus = 'succeeded';
+                state.createStatus = stateStatus.succeededState;
                 state.createError = null;  // Reset lỗi
             })
             .addCase(createCategory.rejected, (state, action) => {
-                state.createStatus = 'failed';
+                state.createStatus = stateStatus.failedState;
                 state.createError = action.payload?.error || 'Failed to create brand';
             });
 
         // Quản lý trạng thái cho fetchCategories
         builder
             .addCase(fetchCategories.pending, (state) => {
-                state.fetchAllStatus = 'loading';
+                state.fetchAllStatus = stateStatus.loadingState;
                 state.fetchAllError = null;  // Reset lỗi trước khi bắt đầu
             })
             .addCase(fetchCategories.fulfilled, (state, action) => {
@@ -177,47 +183,48 @@ const categorySlice = createSlice({
                     nextPage: action.payload.options.nextPage,
                     prevPage: action.payload.options.prevPage
                 };
-                state.fetchAllStatus = 'succeeded';
+                state.fetchAllStatus = stateStatus.succeededState;
             })
             .addCase(fetchCategories.rejected, (state, action) => {
-                state.fetchAllStatus = 'failed';
+                state.fetchAllStatus = stateStatus.failedState;
                 state.fetchAllError = action.error.message || 'Failed to fetch categories';
             });
 
         // Quản lý trạng thái cho fetchCategory
         builder
             .addCase(fetchCategory.pending, (state) => {
-                state.fetchStatus = 'loading';
+                state.fetchStatus = stateStatus.loadingState;
                 state.fetchError = null;  // Reset lỗi trước khi bắt đầu
             })
             .addCase(fetchCategory.fulfilled, (state, action) => {
                 state.category = action.payload.data || null;
-                state.fetchStatus = 'succeeded';
+                state.fetchStatus = stateStatus.succeededState;
             })
             .addCase(fetchCategory.rejected, (state, action) => {
-                state.fetchStatus = 'failed';
+                state.fetchStatus = stateStatus.failedState;
                 state.fetchError = action.error.message || 'Failed to fetch category';
             });
 
         // Quản lý trạng thái cho updateCategory
         builder
             .addCase(updateCategory.pending, (state) => {
-                state.updateStatus = 'loading';
+                state.updateStatus = stateStatus.loadingState;
                 state.updateError = null;  // Reset lỗi trước khi bắt đầu
             })
             .addCase(updateCategory.fulfilled, (state, action) => {
                 const index = state.categories.findIndex(category => category._id === action.payload._id);
                 if (index !== -1) state.categories[index] = action.payload;
-                state.updateStatus = 'succeeded';
+                state.updateStatus = stateStatus.succeededState;
                 state.updateError = null;  // Reset lỗi
             })
             .addCase(updateCategory.rejected, (state, action) => {
-                state.updateStatus = 'failed';
-                state.updateError = action.payload?.error || 'Failed to create brand';
+                state.updateStatus = stateStatus.failedState;
+                state.updateError = action.payload?.error || 'Failed to update category';
             });
     }
 });
 export const {
+    setCategoryIdDetail,
     resetCreateStatus,
     resetUpdateStatus
 } = categorySlice.actions;

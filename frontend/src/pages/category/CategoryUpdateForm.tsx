@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {updateBrand, resetUpdateStatus} from "../../redux/reducers/brandSlice.ts";
+import {updateCategory, resetUpdateStatus} from "../../redux/reducers/categorySlice.ts";
 import {AppDispatch, RootState} from "../../redux/store.ts";
-import ErrorNotification from "../title/ErrorNotification.tsx";
+import stateStatus from "../../utils/stateStatus.ts";
+import ErrorNotification from "../../components/title/ErrorNotification.tsx";
 
 interface Props {
     id: string;
@@ -11,67 +12,61 @@ interface Props {
     onUpdateSuccess: () => void;
 }
 
-const BrandUpdateForm: React.FC<Props> = ({id, name, isActive, onUpdateSuccess}) => {
+const CategoryUpdateForm: React.FC<Props> = ({id, name, isActive, onUpdateSuccess}) => {
     const dispatch = useDispatch<AppDispatch>();
-    const [brandName, setBrandName] = useState(name); // Khởi tạo với giá trị name
+    const [categoryName, setCategoryName] = useState(name); // Khởi tạo với giá trị name
     const [file, setFile] = useState<File | null>(null);
     const [status, setStatus] = useState<boolean | null>(isActive); // Khởi tạo trạng thái dựa trên isActive
 
-    const updateError = useSelector((state: RootState) => state.brands.updateError);
-    const updateStatus = useSelector((state: RootState) => state.brands.updateStatus);
+    const updateError = useSelector((state: RootState) => state.categories.updateError);
+    const updateStatus = useSelector((state: RootState) => state.categories.updateStatus);
 
-    // Biến để theo dõi xem form có thay đổi không
     const [isChanged, setIsChanged] = useState(false);
 
     useEffect(() => {
-        // Reset form sau khi cập nhật thành công
-        if (updateStatus === "succeeded") {
+        if (updateStatus === stateStatus.succeededState) {
             alert('Danh mục đã được cập nhật!');
-            setBrandName(name);
-            setFile(null);
-            setStatus(isActive);
             dispatch(resetUpdateStatus());
             onUpdateSuccess();
         }
-    }, [updateStatus, name, isActive, onUpdateSuccess, dispatch]);
+    }, [updateStatus, onUpdateSuccess, dispatch]);
 
     useEffect(() => {
-        // Kiểm tra xem có bất kỳ giá trị nào đã thay đổi để bật/tắt nút submit
         setIsChanged(
-            brandName !== name ||
-            file !== null || // Giả sử có file mới có nghĩa là đã thay đổi
+            categoryName !== name ||
+            file !== null ||
             status !== isActive
         );
-    }, [brandName, file, status, name, isActive]);
+    }, [categoryName, file, status, name, isActive]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if (!brandName.trim()) {
-            alert('Vui lòng nhập tên thương hiệu');
+        if (!categoryName.trim()) {
+            alert('Vui lòng nhập tên danh mục');
             return;
         }
 
         const formData = new FormData();
-        formData.append('name', brandName);
+        formData.append('name', categoryName);
         if (file) formData.append('file', file);
         if (status !== null) formData.append('isActive', status.toString());
 
-        dispatch(updateBrand({id: id, brandData: formData}));
+        dispatch(updateCategory({id: id, categoryData: formData}));
     };
 
-    const isLoading = updateStatus === 'loading';
+    const isLoading = updateStatus === stateStatus.loadingState;
 
     return (
         <form onSubmit={handleSubmit} className="mb-4 p-4 border border-gray-300 rounded">
-            <h2 className="text-xl font-bold mb-2">Cập Nhật Thương Hiệu</h2>
+            <h2 className="text-xl font-bold mb-2">Cập Nhật Danh Mục</h2>
             <div className="mb-2">
-                <label htmlFor="name" className="block text-gray-700">Tên thương hiệu</label>
+                <label htmlFor="name" className="block text-gray-700">Tên danh mục</label>
                 <input
                     type="text"
                     id="name"
-                    value={brandName}
-                    onChange={(e) => setBrandName(e.target.value)}
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
                     className="border border-gray-300 rounded p-2 w-full"
                     required
                 />
@@ -80,7 +75,7 @@ const BrandUpdateForm: React.FC<Props> = ({id, name, isActive, onUpdateSuccess})
                 }
             </div>
             <div className="mb-2">
-                <label htmlFor="file" className="block text-gray-700">Hình ảnh thương hiệu</label>
+                <label htmlFor="file" className="block text-gray-700">Hình ảnh danh mục</label>
                 <input
                     type="file"
                     id="file"
@@ -114,11 +109,11 @@ const BrandUpdateForm: React.FC<Props> = ({id, name, isActive, onUpdateSuccess})
             </div>
             {isChanged && (
                 <button type="submit" className="bg-blue-500 mt-1 text-white rounded p-2" disabled={isLoading}>
-                    {isLoading ? 'Đang xử lý...' : 'Cập Nhật Thương Hiệu'}
+                    {isLoading ? 'Đang xử lý...' : 'Cập Nhật'}
                 </button>
             )}
         </form>
     );
 };
 
-export default BrandUpdateForm;
+export default CategoryUpdateForm;

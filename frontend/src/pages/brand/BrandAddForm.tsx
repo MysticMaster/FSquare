@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, {useEffect, useState} from 'react';
+import {useDispatch, useSelector} from 'react-redux';
 import {createBrand, resetCreateStatus} from "../../redux/reducers/brandSlice.ts";
-import { AppDispatch, RootState } from "../../redux/store.ts";
-import ErrorNotification from "../title/ErrorNotification.tsx";
+import {AppDispatch, RootState} from "../../redux/store.ts";
+import ErrorNotification from "../../components/title/ErrorNotification.tsx";
 
-const BrandAddForm: React.FC = () => {
+interface Props {
+    onAddSuccess: () => void;
+}
+
+const BrandAddForm: React.FC<Props> = ({onAddSuccess}) => {
     const dispatch = useDispatch<AppDispatch>();
     const [name, setName] = useState('');
     const [file, setThumbnail] = useState<File | null>(null);
@@ -22,6 +26,7 @@ const BrandAddForm: React.FC = () => {
             setThumbnail(null);
             setFileKey(Date.now());
             dispatch(resetCreateStatus());
+            onAddSuccess()
         }
     }, [createStatus]);
 
@@ -33,14 +38,9 @@ const BrandAddForm: React.FC = () => {
             return;
         }
 
-        if (!file) {
-            alert('Vui lòng chọn hình ảnh');
-            return;
-        }
-
         const formData = new FormData();
         formData.append('name', name);
-        formData.append('file', file);
+        if (file) formData.append('file', file);
 
         dispatch(createBrand(formData));
     };
@@ -61,7 +61,7 @@ const BrandAddForm: React.FC = () => {
                     required
                 />
                 {
-                    createError && <ErrorNotification message={createError} />
+                    createError && <ErrorNotification message={createError}/>
                 }
             </div>
             <div className="mb-2">
@@ -73,7 +73,6 @@ const BrandAddForm: React.FC = () => {
                     onChange={(e) => setThumbnail(e.target.files ? e.target.files[0] : null)}
                     className="border border-gray-300 rounded w-full"
                     accept="image/*"
-                    required
                 />
             </div>
             <button type="submit" className="bg-blue-500 mt-1 text-white rounded p-2" disabled={isLoading}>

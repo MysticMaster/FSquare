@@ -17,18 +17,18 @@ import Classification from "../../../models/classificationModel.js";
 const maxAge = 86400;
 
 const createShoes = async (req, res) => {
-    //  const user = req.user;
-    //  if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
+    const user = req.user;
+    if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {brand, category, describe, description} = req.body;
     let {name} = req.body;
-    if (!brand || !category || !name || !describe) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
+    if (!brand || !category || !name || !describe) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Có thuộc tính bắt buộc bị bỏ trống'));
     name = name.trim().replace(/\s+/g, ' ');
     try {
         const existingShoes = await Shoes.findOne({
             name: new RegExp(`^${name}$`, 'i'),
             brand: brand, category: category
         });
-        if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand and category'));
+        if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Danh mục và thương hiệu đã tồn tại sản phẩm này'));
 
         const shoes = new Shoes({
             brand: brand,
@@ -38,11 +38,22 @@ const createShoes = async (req, res) => {
             description: description
         });
         if (req.file) shoes.thumbnail = await putSingleImage(`${shoesDir}/${thumbnailDir}`, req.file);
+
         await shoes.save();
+
+        const findShoes = await Shoes.findById(shoes._id)
+            .select('_id thumbnail name createdAt isActive brand category')
+            .populate('brand', 'name')
+            .populate('category', 'name')
+            .lean();
+        if (!findShoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
+        const shoesData = {...findShoes}
+        if (shoesData.thumbnail) shoesData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoesData.thumbnail, maxAge);
+        shoesData.classificationCount = await Classification.countDocuments({shoes: shoesData._id});
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status,
                 'A new shoes has been created',
-                shoes
+                shoesData
             ));
     } catch (error) {
         console.log(`createShoes ${error.message}`);
@@ -87,8 +98,6 @@ const getShoes = async (req, res) => {
             const classificationCountData = classificationCounts.find(sc => sc._id.equals(shoe._id));
             const shoeData = {
                 ...shoe,
-                brand: shoe.brand.name,
-                category: shoe.category.name,
                 classificationCount: classificationCountData ? classificationCountData.count : 0
             }
 
@@ -130,11 +139,7 @@ const getShoesById = async (req, res) => {
             .populate('category', 'name')
             .lean();
         if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
-        const shoesData = {
-            ...shoes,
-            brand: shoes.brand.name,
-            category: shoes.category.name,
-        };
+        const shoesData = {...shoes};
         if (shoesData.thumbnail) shoesData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoesData.thumbnail, maxAge);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
@@ -157,14 +162,14 @@ const updateShoes = async (req, res) => {
     try {
         const shoes = await Shoes.findById(req.params.id)
             .select('_id thumbnail name brand category describe description isActive');
-        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
+        if (!shoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Sản phẩm không tồn tại'));
 
         if (name && name !== '') {
             const existingShoes = await Shoes.findOne({
                 name: new RegExp(`^${name}$`, 'i'),
                 brand: shoes.brand, category: shoes.category
             });
-            if (existingShoes && existingShoes.name !== shoes.name) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand and category'));
+            if (existingShoes && existingShoes.name !== shoes.name) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Danh mục và thương hiệu đã tồn tại sản phẩm này'));
             shoes.name = name;
         }
         if (brand) {
@@ -172,7 +177,7 @@ const updateShoes = async (req, res) => {
                 name: shoes.name,
                 brand: brand, category: shoes.category
             });
-            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this brand'));
+            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Thương hiệu đã tồn tại sản phẩm này'));
             shoes.brand = brand;
         }
         if (category) {
@@ -180,7 +185,7 @@ const updateShoes = async (req, res) => {
                 name: shoes.name,
                 brand: shoes.brand, category: category
             });
-            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Shoes with the same name already exists for this category'));
+            if (existingShoes) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Danh mục đã tồn tại sản phẩm này'));
             shoes.category = category
         }
         if (describe) shoes.describe = describe;
@@ -194,10 +199,20 @@ const updateShoes = async (req, res) => {
             }
         }
         await shoes.save();
+
+        const findShoes = await Shoes.findById(shoes._id)
+            .select('_id thumbnail name createdAt isActive brand category')
+            .populate('brand', 'name')
+            .populate('category', 'name')
+            .lean();
+        if (!findShoes) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Shoes not found'));
+        const shoesData = {...findShoes}
+        if (shoesData.thumbnail) shoesData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoesData.thumbnail, maxAge);
+        shoesData.classificationCount = await Classification.countDocuments({shoes: shoesData._id});
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Update Shoes Successful',
-                shoes
+                shoesData
             ));
     } catch (error) {
         console.log(`updateShoes ${error.message}`);

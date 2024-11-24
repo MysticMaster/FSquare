@@ -1,34 +1,30 @@
 import {createSlice, createAsyncThunk, PayloadAction} from '@reduxjs/toolkit';
 import axiosClient from '../../api/axiosClient';
-import {shoesApi} from "../../api/api.ts";
-import stateStatus from "../../utils/stateStatus.ts";
+import {classificationApi} from "../../api/api.ts";
+import stateStatus from "../../utils/stateStatus.ts"
 
-interface Thumbnail {
+interface Media {
     url: string;
     key: string;
 }
 
-interface Brand {
-    _id: string;
-    name: string;
-}
-
-interface Category {
-    _id: string;
-    name: string;
-}
-
 interface Shoes {
     _id: string;
-    brand: Brand;
-    category: Category;
-    thumbnail: Thumbnail | null;
     name: string;
-    describe: string | null;
-    description: string | null;
-    classificationCount: number | null;
+}
+
+interface Classification {
+    _id: string;
+    shoes: Shoes;
+    color: string;
+    thumbnail: Media | null;
+    images: [Media] | [];
+    videos: [Media] | [];
+    country: string;
+    price: number;
+    sizeCount: number | null;
     createdAt: string;
-    isActive: boolean;
+    isActive: boolean
 }
 
 interface Pagination {
@@ -42,9 +38,10 @@ interface Pagination {
     prevPage: number | null;
 }
 
-interface ShoesState {
-    shoes: Shoes[];
-    shoe: Shoes | null;
+interface ClassificationState {
+    shoesOwn: Shoes | null;
+    classifications: Classification[];
+    classification: Classification | null;
     detailId: string | null;
     pagination: Pagination | null;
     fetchAllStatus: string;
@@ -57,9 +54,10 @@ interface ShoesState {
     updateError: { code: number, error: string } | null;
 }
 
-const initialState: ShoesState = {
-    shoes: [],
-    shoe: null,
+const initialState: ClassificationState = {
+    shoesOwn: null,
+    classifications: [],
+    classification: null,
     detailId: null,
     pagination: null,
     fetchAllStatus: stateStatus.idleState,
@@ -72,11 +70,13 @@ const initialState: ShoesState = {
     updateError: null
 }
 
-export const createShoes = createAsyncThunk<Shoes, FormData, { rejectValue: { code: number, error: string } }>(
-    'shoes/createShoes',
-    async (shoesData, {rejectWithValue}) => {
+export const createClassification = createAsyncThunk<Classification, FormData, {
+    rejectValue: { code: number, error: string }
+}>(
+    'classifications/createClassification',
+    async (classificationData, {rejectWithValue}) => {
         try {
-            const response = await axiosClient.post(shoesApi.create, shoesData, {
+            const response = await axiosClient.post(classificationApi.create, classificationData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -93,39 +93,37 @@ export const createShoes = createAsyncThunk<Shoes, FormData, { rejectValue: { co
     }
 );
 
-
-export const fetchShoes = createAsyncThunk(
-    'shoes/fetchShoes',
-    async ({page, size, search, status, brandId, categoryId}: {
+export const fetchClassifications = createAsyncThunk(
+    'classifications/fetchClassifications',
+    async ({page, size, search, status, shoesId}: {
         page?: number;
         size?: number;
         search?: string;
         status?: boolean | null;
-        brandId?: string;
-        categoryId?: string;
+        shoesId?: string;
     }) => {
-        const response = await axiosClient.get(shoesApi.getAll, {
-            params: {page, size, search, status, brand: brandId, category: categoryId},
+        const response = await axiosClient.get(`${classificationApi.getByShoesId}/${shoesId}`, {
+            params: {page, size, search, status},
         });
         return response.data;
     }
 );
 
-export const fetchShoe = createAsyncThunk(
-    'shoes/fetchShoe',
+export const fetchClassification = createAsyncThunk(
+    'classifications/fetchClassification',
     async ({id}: { id?: string | null }) => {
-        const response = await axiosClient.get(`${shoesApi.getById}/${id}`);
+        const response = await axiosClient.get(`${classificationApi.getById}/${id}`);
         return response.data;
     }
 );
 
-export const updateShoes = createAsyncThunk<Shoes, { id: string; shoesData: FormData }, {
+export const updateClassification = createAsyncThunk<Classification, { id: string; classificationData: FormData }, {
     rejectValue: { code: number, error: string }
 }>(
-    'shoes/updateShoes',
-    async ({id, shoesData}, {rejectWithValue}) => {
+    'classifications/updateClassification',
+    async ({id, classificationData}, {rejectWithValue}) => {
         try {
-            const response = await axiosClient.patch(`${shoesApi.update}/${id}`, shoesData, {
+            const response = await axiosClient.patch(`${classificationApi.update}/${id}`, classificationData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }
@@ -142,11 +140,14 @@ export const updateShoes = createAsyncThunk<Shoes, { id: string; shoesData: Form
     }
 );
 
-const shoesSlice = createSlice({
-    name: 'shoes',
+const classificationSlice = createSlice({
+    name: 'classifications',
     initialState,
     reducers: {
-        setShoesIdDetail(state, action: PayloadAction<string | null>) {
+        setShoesOwn(state, action: PayloadAction<Shoes | null>) {
+            state.shoesOwn = action.payload;
+        },
+        setClassificationDetailId(state, action: PayloadAction<string | null>) {
             state.detailId = action.payload;
         },
         resetCreateStatus(state) {
@@ -159,30 +160,30 @@ const shoesSlice = createSlice({
         }
     },
     extraReducers: (builder) => {
-        // Quản lý trạng thái cho createShoes
+        // Quản lý trạng thái cho createClassification
         builder
-            .addCase(createShoes.pending, (state) => {
+            .addCase(createClassification.pending, (state) => {
                 state.createStatus = stateStatus.loadingState;
                 state.createError = null;
             })
-            .addCase(createShoes.fulfilled, (state, action) => {
-                state.shoes.unshift(action.payload);
+            .addCase(createClassification.fulfilled, (state, action) => {
+                state.classifications.unshift(action.payload);
                 state.createStatus = stateStatus.succeededState;
                 state.createError = null;
             })
-            .addCase(createShoes.rejected, (state, action) => {
+            .addCase(createClassification.rejected, (state, action) => {
                 state.createStatus = stateStatus.failedState;
-                state.createError = action.payload || {code: 500, error: 'Sự cố không xác định'};
+                state.createError = action.payload || {code: 500, error: 'Sự cố không xác định'}
             });
 
-        // Quản lý trạng thái cho fetchShoes
+        // Quản lý trạng thái cho fetchClassifications
         builder
-            .addCase(fetchShoes.pending, (state) => {
+            .addCase(fetchClassifications.pending, (state) => {
                 state.fetchAllStatus = stateStatus.loadingState
                 state.fetchAllError = null;
             })
-            .addCase(fetchShoes.fulfilled, (state, action) => {
-                state.shoes = action.payload.data || [];
+            .addCase(fetchClassifications.fulfilled, (state, action) => {
+                state.classifications = action.payload.data || [];
                 state.pagination = {
                     size: action.payload.options.size,
                     totalItems: action.payload.options.totalItems,
@@ -195,47 +196,50 @@ const shoesSlice = createSlice({
                 };
                 state.fetchAllStatus = stateStatus.succeededState
             })
-            .addCase(fetchShoes.rejected, (state, action) => {
+            .addCase(fetchClassifications.rejected, (state, action) => {
                 state.fetchAllStatus = stateStatus.failedState
                 state.fetchAllError = action.error.message || 'Failed to fetch categories';
-            })
+            });
 
-        // Quản lý trạng thái cho fetchShoe
+        // Quản lý trạng thái cho fetchClassification
         builder
-            .addCase(fetchShoe.pending, (state) => {
-                state.fetchStatus = stateStatus.loadingState
+            .addCase(fetchClassification.pending, (state) => {
+                state.fetchStatus = stateStatus.loadingState;
                 state.fetchError = null;
             })
-            .addCase(fetchShoe.fulfilled, (state, action) => {
-                state.shoe = action.payload.data || null;
-                state.fetchStatus = stateStatus.succeededState
+            .addCase(fetchClassification.fulfilled, (state, action) => {
+                state.classification = action.payload.data || null;
+                state.fetchStatus = stateStatus.succeededState;
             })
-            .addCase(fetchShoe.rejected, (state, action) => {
+            .addCase(fetchClassification.rejected, (state, action) => {
                 state.fetchStatus = stateStatus.failedState
                 state.fetchError = action.error.message || 'Failed to fetch category';
             });
 
-        // Quản lý trạng thái cho updateShoes
+        // Quản lý trạng thái cho updateClassification
         builder
-            .addCase(updateShoes.pending, (state) => {
+            .addCase(updateClassification.pending, (state) => {
                 state.updateStatus = stateStatus.loadingState;
-                state.updateError = null
+                state.updateError = null;
             })
-            .addCase(updateShoes.fulfilled, (state, action) => {
-                const index = state.shoes.findIndex(shoe => shoe._id === action.payload._id);
-                if (index !== -1) state.shoes[index] = action.payload;
+            .addCase(updateClassification.fulfilled, (state, action) => {
+                const index = state.classifications.findIndex(classification => classification._id === action.payload._id);
+                if (index !== -1) state.classifications[index] = action.payload;
                 state.updateStatus = stateStatus.succeededState
                 state.updateError = null
             })
-            .addCase(updateShoes.rejected, (state, action) => {
+            .addCase(updateClassification.rejected, (state, action) => {
                 state.updateStatus = stateStatus.failedState
                 state.updateError = action.payload || {code: 500, error: 'Sự cố không xác định'};
             });
     }
 });
+
 export const {
-    setShoesIdDetail,
+    setShoesOwn,
+    setClassificationDetailId,
     resetCreateStatus,
     resetUpdateStatus
-} = shoesSlice.actions;
-export default shoesSlice.reducer;
+} = classificationSlice.actions;
+
+export default classificationSlice.reducer;
