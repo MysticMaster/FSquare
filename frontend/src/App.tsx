@@ -3,8 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { checkAuth } from './redux/reducers/authSlice';
 import {AppDispatch, RootState} from './redux/store';
-import LoginPage from './pages/Login';
-import Home from './pages/Home';
+import LoginPage from './pages/LoginPage.tsx';
+import Home from './pages/HomePage.tsx';
 
 const App: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
