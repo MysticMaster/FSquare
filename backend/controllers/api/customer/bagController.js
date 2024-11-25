@@ -63,7 +63,7 @@ const getBags = async (req, res) => {
             .sort({createdAt: -1})
             .populate({
                 path: 'size',
-                select: '_id sizeNumber classification',
+                select: '_id sizeNumber weight classification',
                 populate: {
                     path: 'classification',
                     select: '_id shoes color price thumbnail',
@@ -82,10 +82,10 @@ const getBags = async (req, res) => {
 
             const bagData = {
                 _id: bag._id,
-                shoes: shoes.name,
                 thumbnail: classification.thumbnail,
                 color: classification.color,
-                size: size.sizeNumber,
+                size: {_id: size._id, sizeNumber: size.sizeNumber, weight: size.weight},
+                shoes: {_id: shoes._id, name: shoes.name},
                 quantity: bag.quantity,
                 price: classification.price,
             };
