@@ -20,61 +20,47 @@ const merchantId = process.env.BK_MERCHANT_ID;
 const apiUrl = process.env.BK_API_URL;
 const webhookURL = process.env.BK_WEBHOOK_URL;
 
-const generateJWT = (clientTimestamp) => {
-    const serverTime = Math.floor(Date.now() / 1000);
-    const timeDifference = Math.abs(serverTime - clientTimestamp);
-
-    if (timeDifference > 300) {
-        throw new Error('Invalid timestamp: Time difference too large');
-    }
-
+const generateJWT = () => {
     const payload = {
-        iat: clientTimestamp,
-        exp: clientTimestamp + 60,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60,
         iss: apiKey,
     };
-
     return jwt.sign(payload, apiSecret, {algorithm: "HS256"});
-};
+}
 
 const createPaymentURL = async (req, res) => {
-    const {clientOrderCode, totalAmount, toPhone, timestamp} = req.body;
+    const {clientOrderCode, totalAmount, toPhone} = req.body;
+    if (!clientOrderCode || !totalAmount || !toPhone) return res.status(badRequestResponse.code)
+        .json(responseBody(badRequestResponse.status, 'All fields are required'));
 
-    if (!clientOrderCode || !totalAmount || !toPhone || !timestamp) {
-        return res.status(badRequestResponse.code)
-            .json(responseBody(badRequestResponse.status, 'All fields are required, including timestamp'));
+    const data = {
+        Payment_type: "Pay and Create Token",
+        api_operation: "PAY",
+        init_token: 1,
+        merchant_id: merchantId,
+        mrc_order_id: clientOrderCode,
+        total_amount: totalAmount,
+        description: "test_package",
+        webhooks: webhookURL,
+        customer_phone: toPhone
     }
 
+    const token = generateJWT();
+    const headers = {
+        "Content-Type": "application/json",
+        "jwt": `Bearer ${token}`,
+    };
+
     try {
-        const token = generateJWT(timestamp);
-
-        const headers = {
-            "Content-Type": "application/json",
-            "jwt": `Bearer ${token}`,
-        };
-
-        const data = {
-            Payment_type: "Pay and Create Token",
-            api_operation: "PAY",
-            init_token: 1,
-            merchant_id: merchantId,
-            mrc_order_id: clientOrderCode,
-            total_amount: totalAmount,
-            description: "test_package",
-            webhooks: webhookURL,
-            customer_phone: toPhone
-        };
-
         const response = await axios.post(
             `${apiUrl}/payment/api/v5/order/send`,
             data,
             {headers}
         );
 
-        if (response.data.code !== 0) {
-            return res.status(conflictResponse.code)
-                .json(responseBody(conflictResponse.status, `${response.data.message}`));
-        }
+        if (response.data.code !== 0) return res.status(conflictResponse.code)
+            .json(responseBody(conflictResponse.status, `Unknown response: ${response.data.message}`));
 
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Successfully sent order', {
@@ -87,11 +73,16 @@ const createPaymentURL = async (req, res) => {
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, `Server error: ${error.message}`));
     }
-};
-
+}
 
 const getPayments = async (req, res) => {
     try {
+        const token = generateJWT();
+        const headers = {
+            "Content-Type": "application/json",
+            "jwt": `Bearer ${token}`,
+        };
+
         const response = await axios.get(
             `${apiUrl}/payment/api/v5/bpm/list`,
             {headers}
@@ -113,6 +104,12 @@ const checkPayment = async (req, res) => {
     if (!clientOrderCode || !orderId) return res.status(badRequestResponse.code)
         .json(responseBody(badRequestResponse.status, 'All fields are required'));
     try {
+        const token = generateJWT();
+        const headers = {
+            "Content-Type": "application/json",
+            "jwt": `Bearer ${token}`,
+        };
+
         const response = await axios.get(
             `${apiUrl}/payment/api/v5/order/detail?id=${orderId}&mrc_order_id=${clientOrderCode}`,
             {headers}
