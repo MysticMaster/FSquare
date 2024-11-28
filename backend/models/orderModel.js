@@ -103,7 +103,6 @@ const OrderSchema = new mongoose.Schema({
                 'completed',// - 'completed': Quá trình hoàn trả đã hoàn tất, sản phẩm đã được trả về
                 'refunded'// - 'refunded': Tiền đã được hoàn lại cho khách hàng sau khi hoàn trả thành công
             ],
-            default: 'initiated' // Trạng thái mặc định là 'initiated' khi quá trình hoàn trả bắt đầu
         },
         statusTimestamps: {
             initiated: {type: Date}, // Thời gian khi trạng thái 'initiated'
