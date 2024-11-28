@@ -78,7 +78,7 @@ const getOrders = async (req, res) => {
     const status = req.query.status || orderStatus.pending;
 
     try {
-        const orders = await Order.find({ customer: userId, status: status })
+        const orders = await Order.find({ customer: userId, status: status,isActive: true })
             .populate({
                 path: 'orderItems.size',
                 select: '_id sizeNumber classification',

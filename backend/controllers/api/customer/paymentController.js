@@ -59,8 +59,8 @@ const createPaymentURL = async (req, res) => {
             {headers}
         );
 
-        if (response.data.code !== 0) return res.status(serviceUnavailableResponse.code)
-            .json(responseBody(serviceUnavailableResponse.status, 'Unknown response'));
+        if (response.data.code !== 0) return res.status(conflictResponse.code)
+            .json(responseBody(conflictResponse.status, `${response.data.message}`));
 
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Successfully sent order', {
@@ -71,7 +71,7 @@ const createPaymentURL = async (req, res) => {
     } catch (error) {
         console.log(`createPaymentURL ${error.message}`);
         res.status(internalServerErrorResponse.code)
-            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+            .json(responseBody(internalServerErrorResponse.status, `Server error: ${error.message}`));
     }
 }
 
