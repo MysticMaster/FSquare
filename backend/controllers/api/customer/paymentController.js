@@ -21,9 +21,10 @@ const apiUrl = process.env.BK_API_URL;
 const webhookURL = process.env.BK_WEBHOOK_URL;
 
 const generateJWT = () => {
+    const currentTime = Math.floor(Date.now() / 1000);
     const payload = {
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 60,
+        iat: currentTime,
+        exp: currentTime + 60,
         iss: apiKey,
     };
     return jwt.sign(payload, apiSecret, {algorithm: "HS256"});
