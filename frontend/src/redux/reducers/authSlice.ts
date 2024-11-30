@@ -14,6 +14,7 @@ interface Admin {
 }
 
 interface AuthState {
+    authenticated: boolean | null;
     authority: string | null;
     admin: Admin | null;
     status: string | null;
@@ -22,6 +23,7 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
+    authenticated: null,
     authority: null,
     admin: null,
     status: stateStatus.idleState,
@@ -29,7 +31,9 @@ const initialState: AuthState = {
     pError: null
 };
 
-export const login = createAsyncThunk<{ authority: string; status: string }, { username: string; password: string }, { rejectValue: { uError?: string; pError?: string } }>(
+export const login = createAsyncThunk<{ authority: string; status: string }, { username: string; password: string }, {
+    rejectValue: { uError?: string; pError?: string }
+}>(
     'auth/login',
     async ({username, password}, {rejectWithValue}) => {
         try {
@@ -48,7 +52,6 @@ export const login = createAsyncThunk<{ authority: string; status: string }, { u
                 throw new Error('LoginPage failed');
             }
         } catch (error: unknown) {
-            console.log(error);
             if (error instanceof Error) {
                 return rejectWithValue({uError: 'LoginPage failed', pError: 'LoginPage failed'});
             }
@@ -78,15 +81,32 @@ export const checkAuth = createAsyncThunk(
     }
 );
 
+export const logout = createAsyncThunk(
+    'auth/logout',
+    async (_, {rejectWithValue}) => {
+        try {
+            await axiosClient.get(authApi.logout, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                withCredentials: true
+            });
+        } catch (error) {
+            return rejectWithValue('Not authenticated');
+        }
+    }
+);
+
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        logout: (state) => {
+        resetAuthority: (state) => {
             state.authority = null;
+            state.authenticated = false;
             state.admin = null;
             state.status = stateStatus.idleState;
-        },
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -95,6 +115,7 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 state.authority = action.payload.authority;
+                state.authenticated = true;
                 state.status = stateStatus.succeededState;
             })
             .addCase(login.rejected, (state, action) => {
@@ -102,19 +123,37 @@ const authSlice = createSlice({
                 state.uError = action.payload?.uError || null;
                 state.pError = action.payload?.pError || null;
             })
+
+        builder
             .addCase(checkAuth.pending, (state) => {
                 state.status = stateStatus.loadingState;
             })
             .addCase(checkAuth.fulfilled, (state, action) => {
                 state.authority = action.payload.authority;
+                state.authenticated = true;
                 state.admin = action.payload;
                 state.status = stateStatus.succeededState;
             })
             .addCase(checkAuth.rejected, (state) => {
                 state.status = stateStatus.failedState;
             });
+
+        builder
+            .addCase(logout.pending, (state) => {
+                state.status = stateStatus.loadingState
+            })
+            .addCase(logout.fulfilled, (state) => {
+                resetAuthority()
+                state.status = stateStatus.succeededState
+            })
+            .addCase(logout.rejected, (state) => {
+                state.status = stateStatus.failedState
+                resetAuthority()
+            })
     },
 });
 
-export const {logout} = authSlice.actions;
+export const {
+    resetAuthority
+} = authSlice.actions;
 export default authSlice.reducer;

@@ -37,7 +37,10 @@ const getClassificationsByIdShoes = async (req, res) => {
 
 const getClassificationById = async (req, res) => {
     try {
-        const classification = await Classification.findById(req.params.id)
+        const classification = await Classification.findOne({
+            _id: req.params.id,
+            isActive: true
+        })
             .select('_id images videos color country price')
             .lean();
 

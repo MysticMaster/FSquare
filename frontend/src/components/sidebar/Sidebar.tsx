@@ -5,6 +5,8 @@ import SidebarItem from "./SidebarItem.tsx";
 import {useDispatch} from "react-redux";
 import {AppDispatch} from "../../redux/store.ts";
 import {setShoesOwn} from "../../redux/reducers/classificationSlice.ts";
+import {setClassificationOwn} from "../../redux/reducers/sizeSlice.ts";
+import {logout} from "../../redux/reducers/authSlice.ts";
 
 interface CustomSidebarProps {
     activeItem: string | null;
@@ -18,7 +20,13 @@ const CustomSidebar: React.FC<CustomSidebarProps> = ({activeItem, onItemClick, t
 
     const handleClose = () => {
         dispatch(setShoesOwn(null));
+        dispatch(setClassificationOwn(null));
     };
+
+    const handleLogout = () => {
+        dispatch(logout())
+        window.location.reload()
+    }
 
     return (
         <div
@@ -72,7 +80,8 @@ const CustomSidebar: React.FC<CustomSidebarProps> = ({activeItem, onItemClick, t
                 />
             </nav>
             <div className="border-t mb-5 border-gray-200 text-gray-700">
-                <div className="flex items-center mt-5 hover:bg-gray-100 hover:text-gray-80 cursor-pointer p-2">
+                <div onClick={handleLogout}
+                     className="flex items-center mt-5 hover:bg-gray-100 hover:text-gray-80 cursor-pointer p-2">
                     <HiArrowSmRight className="mr-2"/>
                     Đăng xuất
                 </div>

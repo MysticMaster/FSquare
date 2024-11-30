@@ -14,6 +14,17 @@ import {deleteObjectCommand} from "../../../config/aswS3.js";
 
 const maxAge = 86400;
 
+const responseData = async (id, res) => {
+    const brand = await Brand.findById(id)
+        .select('_id thumbnail name createdAt isActive').lean();
+
+    if (!brand) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
+    if (brand.thumbnail) brand.thumbnail = await getSingleImage(`${brandDir}/${thumbnailDir}`, brand.thumbnail, maxAge);
+
+    brand.shoesCount = await Shoes.countDocuments({brand: brand._id});
+    return brand;
+}
+
 const createBrand = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
@@ -33,12 +44,8 @@ const createBrand = async (req, res) => {
         if (req.file) brand.thumbnail = await putSingleImage(`${brandDir}/${thumbnailDir}`, req.file);
         await brand.save();
 
-        const brandData = await Brand.findById(brand._id)
-            .select('_id thumbnail name createdAt isActive').lean();
+        const brandData = await responseData(brand._id, res);
 
-        if (!brandData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
-        if (brandData.thumbnail) brandData.thumbnail = await getSingleImage(`${brandDir}/${thumbnailDir}`, brandData.thumbnail, maxAge);
-        brandData.shoesCount = 0;
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status, 'A new brand has been created', brandData));
     } catch (error) {
@@ -113,12 +120,7 @@ const getBrands = async (req, res) => {
 
 const getBrandById = async (req, res) => {
     try {
-        const brand = await Brand.findById(req.params.id)
-            .select('_id thumbnail name createdAt isActive').lean();
-
-        if (!brand) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
-        const brandData = {...brand}
-        if (brandData.thumbnail) brandData.thumbnail = await getSingleImage(`${brandDir}/${thumbnailDir}`, brandData.thumbnail, maxAge);
+        const brandData = await responseData(req.params.id, res);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Brand Successful',
@@ -161,18 +163,7 @@ const updateBrand = async (req, res) => {
 
         await brand.save();
 
-        const brandData = await Brand.findById(brand._id)
-            .select('_id thumbnail name createdAt isActive').lean();
-
-        if (!brandData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Brand not found'));
-        if (brandData.thumbnail) brandData.thumbnail = await getSingleImage(`${brandDir}/${thumbnailDir}`, brandData.thumbnail, maxAge);
-
-        const brandCountResult = await Shoes.aggregate([
-            { $match: { brand: brandData._id } },
-            { $group: { _id: "$brand", count: { $sum: 1 } } }
-        ]);
-
-        brandData.shoesCount = brandCountResult.length > 0 ? brandCountResult[0].count : 0;
+        const brandData = await responseData(brand._id, res);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Update Brand Successful',

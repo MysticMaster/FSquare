@@ -6,7 +6,7 @@ const OrderItemSchema = new mongoose.Schema({
         ref: 'Size',
         required: true
     },
-    shoes:{
+    shoes: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Shoes',
         required: true
@@ -56,7 +56,7 @@ const OrderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    content:{
+    content: {
         type: String,
         required: true
     },
@@ -85,7 +85,7 @@ const OrderSchema = new mongoose.Schema({
         default: 'pending'
     },
     statusTimestamps: {
-        pending: {type: Date},     // Thời gian khi đơn hàng ở trạng thái 'pending'
+        pending: {type: Date, default: Date.now()},  // Thời gian khi đơn hàng ở trạng thái 'pending'
         processing: {type: Date},  // Thời gian khi đơn hàng ở trạng thái 'processing'
         shipped: {type: Date},     // Thời gian khi đơn hàng ở trạng thái 'shipped'
         delivered: {type: Date},   // Thời gian khi đơn hàng ở trạng thái 'delivered'

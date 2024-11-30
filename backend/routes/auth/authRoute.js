@@ -5,6 +5,7 @@ import adminController from "../../controllers/auth/adminController.js";
 const router = express.Router();
 
 router.post('/admin/v1/authentications', adminController.authentication);
+router.get('/admin/v1/authentications', adminController.logout);
 
 router.post('/customer/v1/authentications', customerController.authentication);
 router.post('/customer/v1/registrations', customerController.registration);

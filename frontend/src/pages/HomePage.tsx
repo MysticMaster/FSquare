@@ -8,6 +8,7 @@ import CategoryPage from "./CategoryPage.tsx";
 import ShoesPage from "./ShoesPage.tsx";
 import '../styles.scss'
 import DetailContainer from "../components/container/DetailContainer.tsx";
+import OrderPage from "./OrderPage.tsx";
 
 const HomePage: React.FC = () => {
     const [activeItem, setActiveItem] = useState<string | null>('dashboard');
@@ -18,13 +19,21 @@ const HomePage: React.FC = () => {
     const categoryDetailId = useSelector((state: RootState) => state.categories.detailId);
     const brandDetailId = useSelector((state: RootState) => state.brands.detailId);
     const shoesDetailId = useSelector((state: RootState) => state.shoes.detailId);
+    const classificationDetailId = useSelector((state: RootState) => state.classifications.detailId);
+    const sizeDetailId = useSelector((state: RootState) => state.sizes.detailId);
+    const orderDetailId = useSelector((state: RootState) => state.orders.detailId);
 
     const [isDetail, setIsDetail] = useState<boolean>(false)
 
     useEffect(() => {
-        if (categoryDetailId || brandDetailId || shoesDetailId) setIsDetail(true)
+        if (categoryDetailId ||
+            brandDetailId ||
+            shoesDetailId ||
+            classificationDetailId ||
+            sizeDetailId ||
+            orderDetailId) setIsDetail(true)
         else setIsDetail(false)
-    }, [categoryDetailId, brandDetailId, shoesDetailId]);
+    }, [categoryDetailId, brandDetailId, shoesDetailId, classificationDetailId, sizeDetailId, orderDetailId]);
 
     const handleItemClick = (item: string) => {
         setActiveItem(item);
@@ -44,6 +53,8 @@ const HomePage: React.FC = () => {
                 return <BrandPage/>; // Nội dung cho Quản lý thương hiệu
             case 'shoes':
                 return <ShoesPage/>; // Nội dung cho Quản lý danh mục
+            case 'orders':
+                return <OrderPage/>; // Nội dung cho Quản lý danh mục
             default:
                 return (
                     <div>

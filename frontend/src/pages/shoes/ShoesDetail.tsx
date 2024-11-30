@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch, RootState} from "../../redux/store.ts";
-import {fetchShoe} from "../../redux/reducers/shoesSlice.ts";
+import {fetchShoe, resetShoesUpdateStatus} from "../../redux/reducers/shoesSlice.ts";
 import ShoesUpdateForm from "./ShoesUpdateForm.tsx";
 import stateStatus from "../../utils/stateStatus.ts";
 import Loading from "../../components/Loading.tsx";
@@ -33,6 +33,7 @@ const ShoeDetail: React.FC<Props> = ({id}) => {
 
     const handleClick = () => {
         setIsUpdate(!isUpdate)
+        if(!isUpdate) dispatch(resetShoesUpdateStatus())
     }
 
     return (

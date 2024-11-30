@@ -18,8 +18,6 @@ interface Classification {
     shoes: Shoes;
     color: string;
     thumbnail: Media | null;
-    images: [Media] | [];
-    videos: [Media] | [];
     country: string;
     price: number;
     sizeCount: number | null;
@@ -67,7 +65,7 @@ const initialState: ClassificationState = {
     fetchAllError: null,
     fetchError: null,
     createError: null,
-    updateError: null
+    updateError: null,
 }
 
 export const createClassification = createAsyncThunk<Classification, FormData, {
@@ -144,6 +142,13 @@ const classificationSlice = createSlice({
     name: 'classifications',
     initialState,
     reducers: {
+        updateSizeCount(state, action: PayloadAction<string | null>) {
+            const index = state.classifications.findIndex(classification => classification._id === action.payload);
+            if (index !== -1) {
+                const count = state.classifications[index].sizeCount || 0;
+                state.classifications[index].sizeCount = count + 1;
+            }
+        },
         setShoesOwn(state, action: PayloadAction<Shoes | null>) {
             state.shoesOwn = action.payload;
         },
@@ -154,7 +159,7 @@ const classificationSlice = createSlice({
             state.createStatus = stateStatus.idleState
             state.createError = null;
         },
-        resetUpdateStatus(state) {
+        resetClassificationUpdateStatus(state) {
             state.updateStatus = stateStatus.idleState
             state.updateError = null;
         }
@@ -236,10 +241,11 @@ const classificationSlice = createSlice({
 });
 
 export const {
+    updateSizeCount,
     setShoesOwn,
     setClassificationDetailId,
     resetCreateStatus,
-    resetUpdateStatus
+    resetClassificationUpdateStatus,
 } = classificationSlice.actions;
 
 export default classificationSlice.reducer;

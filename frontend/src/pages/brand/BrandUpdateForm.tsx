@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {updateBrand, resetUpdateStatus} from "../../redux/reducers/brandSlice.ts";
+import {updateBrand, resetBrandUpdateStatus} from "../../redux/reducers/brandSlice.ts";
 import {AppDispatch, RootState} from "../../redux/store.ts";
 import stateStatus from "../../utils/stateStatus.ts";
 import ErrorNotification from "../../components/title/ErrorNotification.tsx";
@@ -21,22 +21,19 @@ const BrandUpdateForm: React.FC<Props> = ({id, name, isActive, onUpdateSuccess})
     const updateError = useSelector((state: RootState) => state.brands.updateError);
     const updateStatus = useSelector((state: RootState) => state.brands.updateStatus);
 
-    const [isChanged, setIsChanged] = useState(false);
+    const [isDisabled, setIsDisabled] = useState(false);
 
     useEffect(() => {
         if (updateStatus === stateStatus.succeededState) {
             alert('Thương hiệu đã được cập nhật!');
-            dispatch(resetUpdateStatus());
+            dispatch(resetBrandUpdateStatus());
             onUpdateSuccess();
         }
-    }, [updateStatus,onUpdateSuccess, dispatch]);
+    }, [updateStatus, onUpdateSuccess, dispatch]);
 
     useEffect(() => {
-        setIsChanged(
-            brandName !== name ||
-            file !== null ||
-            status !== isActive
-        );
+        const hasChanges = brandName !== name || file !== null || status !== isActive
+        setIsDisabled(!hasChanges);
     }, [brandName, file, status, name, isActive]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -107,11 +104,14 @@ const BrandUpdateForm: React.FC<Props> = ({id, name, isActive, onUpdateSuccess})
                     <span className="ml-2">Ngừng Kinh Doanh</span>
                 </label>
             </div>
-            {isChanged && (
-                <button type="submit" className="bg-blue-500 mt-1 text-white rounded p-2" disabled={isLoading}>
+
+            <div className={'w-full flex justify-end'}>
+                <button type="submit"
+                        className={`bg-blue-500 mt-1 w-1/4 text-white rounded p-2 ${isDisabled ? 'bg-gray-300' : ''}`}
+                        disabled={isDisabled}>
                     {isLoading ? 'Đang xử lý...' : 'Cập Nhật'}
                 </button>
-            )}
+            </div>
         </form>
     );
 };

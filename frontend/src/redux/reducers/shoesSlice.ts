@@ -146,6 +146,13 @@ const shoesSlice = createSlice({
     name: 'shoes',
     initialState,
     reducers: {
+        updateClassificationCount(state, action: PayloadAction<string | null>) {
+            const index = state.shoes.findIndex(shoe => shoe._id === action.payload);
+            if (index !== -1) {
+                const count = state.shoes[index].classificationCount || 0;
+                state.shoes[index].classificationCount = count + 1;
+            }
+        },
         setShoesIdDetail(state, action: PayloadAction<string | null>) {
             state.detailId = action.payload;
         },
@@ -153,7 +160,7 @@ const shoesSlice = createSlice({
             state.createStatus = stateStatus.idleState
             state.createError = null;
         },
-        resetUpdateStatus(state) {
+        resetShoesUpdateStatus(state) {
             state.updateStatus = stateStatus.idleState
             state.updateError = null;
         }
@@ -234,8 +241,9 @@ const shoesSlice = createSlice({
     }
 });
 export const {
+    updateClassificationCount,
     setShoesIdDetail,
     resetCreateStatus,
-    resetUpdateStatus
+    resetShoesUpdateStatus
 } = shoesSlice.actions;
 export default shoesSlice.reducer;
