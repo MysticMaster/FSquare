@@ -18,7 +18,7 @@ connectDB().then(r => {
 });
 
 const corsOptions = {
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173','http://51.79.156.193:5173'],
     credentials: true,
     optionsSuccessStatus: 200
 };
