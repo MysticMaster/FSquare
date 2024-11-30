@@ -59,10 +59,7 @@ const createOrder = async (req, res) => {
             content: order.content,
             isFreeShip: order.isFreeShip,
             isPayment: order.isPayment,
-            note: order.note,
-            statusTimestamps: {
-                pending: new Date(),
-            }
+            note: order.note
         });
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status, 'Order created successfully', newOrder));
@@ -74,11 +71,17 @@ const createOrder = async (req, res) => {
 }
 
 const getOrders = async (req, res) => {
-    const userId = req.user.id; // Lấy ID người dùng từ req.user
+    const userId = req.user.id;
     const status = req.query.status || orderStatus.pending;
+    const sizePage = parseInt(req.query.size, 10) || 6;
+    const currentPage = parseInt(req.query.page, 10) || 1;
 
     try {
-        const orders = await Order.find({ customer: userId, status: status,isActive: true })
+        const query = { customer: userId, status: status, isActive: true };
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders / sizePage);
+
+        const orders = await Order.find(query)
             .populate({
                 path: 'orderItems.size',
                 select: '_id sizeNumber classification',
@@ -92,6 +95,9 @@ const getOrders = async (req, res) => {
                 }
             })
             .select('_id clientOrderCode codAmount shippingFee status createdAt orderItems')
+            .sort({ createdAt: -1 })
+            .skip((currentPage - 1) * sizePage)
+            .limit(sizePage)
             .lean();
 
         const ordersData = await Promise.all(orders.map(async (order) => {
@@ -109,18 +115,35 @@ const getOrders = async (req, res) => {
             } : null;
 
             return {
-                id: order._id,
+                _id: order._id,
                 clientOrderCode: order.clientOrderCode,
                 codAmount: order.codAmount,
                 shippingFee: order.shippingFee,
                 status: order.status,
                 createdAt: order.createdAt,
-                firstOrderItem: productData, // Chỉ lấy thông tin sản phẩm đầu tiên
+                firstOrderItem: productData,
             };
         }));
 
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Orders retrieved successfully', ordersData));
+            .json(responseBody(successResponse.status,
+                'Orders retrieved successfully',
+                ordersData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalOrders,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getOrders Error: ${error.message}`);
         res.status(internalServerErrorResponse.code)
