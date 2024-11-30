@@ -41,7 +41,7 @@ const LoginPage: React.FC = () => {
     return (
         <section className="bg-gray-50">
             <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-                <a href="#" className="flex items-center mb-6 text-3xl font-semibold text-gray-900">
+                <a className="flex items-center mb-6 text-3xl font-bold text-gray-900">
                     <img className="w-10 h-10 mr-2 rounded-lg" src="/logo/fsquare_light.webp" alt="logo"/>
                     FSquare
                 </a>

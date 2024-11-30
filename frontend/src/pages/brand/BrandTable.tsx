@@ -88,7 +88,7 @@ const BrandTable: React.FC = () => {
                 <TableOptions>
                     <PageSizeSelector pageSize={pageSize} onChange={handlePageSizeChange}/>
                     <div className="flex items-center">
-                        <SearchBox search={searchTerm} onSearchChange={handleSearchChange}/>
+                        <SearchBox search={searchTerm} placeholder={'Tìm kiếm theo tên...'} onSearchChange={handleSearchChange}/>
                         <Filter onClick={handleVisibleFilter}/>
                     </div>
                 </TableOptions>

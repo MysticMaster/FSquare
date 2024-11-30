@@ -138,7 +138,7 @@ const ShoesTable: React.FC = () => {
                 <TableOptions>
                     <PageSizeSelector pageSize={pageSize} onChange={handlePageSizeChange}/>
                     <div className="flex items-center">
-                        <SearchBox search={searchTerm} onSearchChange={handleSearchChange}/>
+                        <SearchBox search={searchTerm} placeholder={'Tìm kiếm theo tên...'} onSearchChange={handleSearchChange}/>
                         <Filter onClick={handleVisibleFilter}/>
                     </div>
                 </TableOptions>
@@ -162,7 +162,7 @@ const ShoesTable: React.FC = () => {
                                     <th className="py-3 px-3 border-b border-gray-300 text-end"></th>
                                     <th className="py-3 px-3 border-b border-gray-300 text-end">Thương hiệu</th>
                                     <th className="py-3 px-3 border-b border-gray-300 text-end">Danh mục</th>
-                                    <th className="py-3 px-3 border-b border-gray-300 text-end">Tên giày</th>
+                                    <th className="py-3 px-3 border-b border-gray-300 text-end">Tên sản phẩm</th>
                                     <th className="py-3 px-3 border-b border-gray-300 text-end">Phân loại</th>
                                     <th className="py-3 px-3 border-b border-gray-300 text-end">Ngày tạo</th>
                                     <th className="py-3 px-3 border-b border-gray-300 text-end">Trạng thái</th>

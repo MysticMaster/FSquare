@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {updateShoes, resetUpdateStatus} from "../../redux/reducers/shoesSlice.ts";
+import {updateShoes, resetShoesUpdateStatus} from "../../redux/reducers/shoesSlice.ts";
 import {AppDispatch, RootState} from "../../redux/store.ts";
 import {fetchBrands} from "../../redux/reducers/brandSlice.ts";
 import {fetchCategories} from "../../redux/reducers/categorySlice.ts";
@@ -47,6 +47,7 @@ const ShoesUpdateForm: React.FC<Props> = ({
     const [updateCategory, setUpdateCategory] = useState<Category | null>(category);
     const [updateDescribe, setUpdateDescribe] = useState<string>(describe);
     const [updateDescription, setUpdateDescription] = useState<string | null>(description);
+    const [isDisabled, setIsDisabled] = useState<boolean>(false);
 
     const brands = useSelector((state: RootState) => state.brands.brands);
     const categories = useSelector((state: RootState) => state.categories.categories);
@@ -54,7 +55,7 @@ const ShoesUpdateForm: React.FC<Props> = ({
     const updateError = useSelector((state: RootState) => state.shoes.updateError);
     const updateStatus = useSelector((state: RootState) => state.shoes.updateStatus);
 
-    const [isChanged, setIsChanged] = useState(false);
+    const isLoading = updateStatus === stateStatus.loadingState;
 
     useEffect(() => {
         dispatch(fetchBrands({}));
@@ -64,7 +65,7 @@ const ShoesUpdateForm: React.FC<Props> = ({
     useEffect(() => {
         if (updateStatus === stateStatus.succeededState) {
             alert('Sản phẩm đã được cập nhật!');
-            dispatch(resetUpdateStatus());
+            dispatch(resetShoesUpdateStatus());
             onUpdateSuccess();
         }
     }, [updateStatus, onUpdateSuccess, dispatch]);
@@ -77,9 +78,9 @@ const ShoesUpdateForm: React.FC<Props> = ({
             updateBrand?._id !== brand?._id ||
             updateCategory?._id !== category?._id ||
             updateDescribe !== describe ||
-            updateDescription !== description;
+            updateDescription !== description
 
-        setIsChanged(hasChanges);
+        setIsDisabled(!hasChanges);
     }, [
         updateName,
         file,
@@ -93,8 +94,9 @@ const ShoesUpdateForm: React.FC<Props> = ({
         brand,
         category,
         describe,
-        description,
+        description
     ]);
+
 
     const handleBrandSelect = (selectedBrand: Brand | null) => {
         setUpdateBrand(selectedBrand);
@@ -123,21 +125,21 @@ const ShoesUpdateForm: React.FC<Props> = ({
         }
 
         const formData = new FormData();
-        formData.append('name', updateName);
-        formData.append('brand', updateBrand._id);
-        formData.append('category', updateCategory._id);
-        formData.append('describe', updateDescribe);
+        if (updateName !== name) formData.append('name', updateName);
+        if (updateBrand !== brand) formData.append('brand', updateBrand._id);
+        if (updateCategory !== category) formData.append('category', updateCategory._id);
+        if (updateDescribe !== describe) formData.append('describe', updateDescribe);
         if (updateDescription) {
-            formData.append('description', updateDescription);
+            if (updateDescription !== description) formData.append('description', updateDescription);
         }
-        formData.append('isActive', String(status));
+        if (status !== isActive) formData.append('isActive', String(status));
         if (file) {
             formData.append('file', file);
         }
 
         dispatch(updateShoes({id: id, shoesData: formData}))
     }
-    const isLoading = updateStatus === stateStatus.loadingState;
+
     return (
         <form onSubmit={handleSubmit} className="mb-4 p-4 border border-gray-300 rounded">
             <h2 className="text-xl font-bold mb-2">Cập Nhật Sản Phẩm</h2>
@@ -149,7 +151,7 @@ const ShoesUpdateForm: React.FC<Props> = ({
                     value={updateName}
                     onChange={(e) => {
                         setUpdateName(e.target.value)
-                        dispatch(resetUpdateStatus());
+                        dispatch(resetShoesUpdateStatus());
                     }}
                     className="border border-gray-300 rounded p-2 w-full"
                     required
@@ -220,11 +222,15 @@ const ShoesUpdateForm: React.FC<Props> = ({
                     <span className="ml-2">Ngừng Kinh Doanh</span>
                 </label>
             </div>
-            {isChanged && (
-                <button type="submit" className="bg-blue-500 mt-1 text-white rounded p-2" disabled={isLoading}>
+
+            <div className={'w-full flex justify-end'}>
+                <button type="submit"
+                        className={`bg-blue-500 mt-1 w-1/4 text-white rounded p-2 ${isDisabled ? 'bg-gray-300' : ''}`}
+                        disabled={isDisabled}>
                     {isLoading ? 'Đang xử lý...' : 'Cập Nhật'}
                 </button>
-            )}
+            </div>
+
         </form>
     )
 }

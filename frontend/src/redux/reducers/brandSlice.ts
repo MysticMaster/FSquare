@@ -143,7 +143,7 @@ const brandSlice = createSlice({
             state.createStatus = stateStatus.idleState; // Reset trạng thái về idle
             state.createError = null; // Reset lỗi
         },
-        resetUpdateStatus(state) {
+        resetBrandUpdateStatus(state) {
             state.updateStatus = stateStatus.idleState;
             state.updateError = null;
         }
@@ -226,6 +226,6 @@ const brandSlice = createSlice({
 export const {
     setBrandIdDetail,
     resetCreateStatus,
-    resetUpdateStatus
+    resetBrandUpdateStatus
 } = brandSlice.actions;
 export default brandSlice.reducer;
