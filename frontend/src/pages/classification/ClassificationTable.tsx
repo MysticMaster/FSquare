@@ -1,7 +1,11 @@
 import React, {useEffect, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch, RootState} from "../../redux/store.ts";
-import {fetchClassifications, setShoesOwn} from "../../redux/reducers/classificationSlice.ts";
+import {
+    fetchClassifications,
+    setClassificationDetailId,
+    setShoesOwn
+} from "../../redux/reducers/classificationSlice.ts";
 import TextButton from "../../components/button/TextButton.tsx";
 import TableOptions from "../../components/container/TableOptions.tsx";
 import PageSizeSelector from "../../components/pagination/PageSizeSelector.tsx";
@@ -13,6 +17,9 @@ import stateStatus from "../../utils/stateStatus.ts";
 import Loading from "../../components/Loading.tsx";
 import Pagination from "../../components/pagination/Pagination.tsx";
 import ClassificationItem from "./ClassificationItem.tsx";
+import {setClassificationOwn} from "../../redux/reducers/sizeSlice.ts";
+import ClassificationAddForm from "./ClassificationAddForm.tsx";
+import {updateClassificationCount} from "../../redux/reducers/shoesSlice.ts";
 
 const ClassificationTable: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -78,12 +85,17 @@ const ClassificationTable: React.FC = () => {
         setIsAddClassification(false)
     }
 
-    const handleDetail = (id: string) => {
-        // dispatch(setShoesIdDetail(id))
+    const handleAddSuccess = () => {
+        if (shoesOwn) dispatch(updateClassificationCount(shoesOwn._id));
+        handleCancelAdd()
     }
 
-    const handleShowSizes = (id: string) => {
-        // dispatch(setShoesId(id))
+    const handleDetail = (id: string) => {
+        dispatch(setClassificationDetailId(id))
+    }
+
+    const handleShowSizes = (id: string, color: string, name: string) => {
+        dispatch(setClassificationOwn({_id: id, color: color, name: name}));
     }
 
     const handleSelect = (id: string) => {
@@ -113,7 +125,8 @@ const ClassificationTable: React.FC = () => {
                     <TableOptions>
                         <PageSizeSelector pageSize={pageSize} onChange={handlePageSizeChange}/>
                         <div className="flex items-center">
-                            <SearchBox search={searchTerm} onSearchChange={handleSearchChange}/>
+                            <SearchBox search={searchTerm} placeholder={'Tìm kiếm theo màu sắc...'}
+                                       onSearchChange={handleSearchChange}/>
                             <Filter onClick={handleVisibleFilter}/>
                         </div>
                     </TableOptions>
@@ -149,6 +162,7 @@ const ClassificationTable: React.FC = () => {
                                                 onDetail={() => handleDetail(classification._id)}
                                                 onSelect={() => handleSelect(classification._id)}
                                                 onShowSizes={() => {
+                                                    handleShowSizes(classification._id, classification.color, classification.shoes.name)
                                                 }}
                                                 isSelected={selectedId === classification._id}
                                             />
@@ -179,12 +193,12 @@ const ClassificationTable: React.FC = () => {
                     }
                 </div>
                 {
-                    isAddClassification && (<div className="absolute inset-0 bg-white z-10">
+                    isAddClassification && shoesOwn && (<div className="absolute inset-0 bg-white z-10">
                         <div className={"w-full flex justify-between items-center mb-4"}>
                             <h1 className="text-2xl font-bold">Thêm phân loại</h1>
                             <TextButton onClick={handleCancelAdd} title="Hủy bỏ"/>
                         </div>
-
+                        <ClassificationAddForm shoesId={shoesOwn._id} onAddSuccess={handleAddSuccess}/>
                     </div>)
                 }
             </div>

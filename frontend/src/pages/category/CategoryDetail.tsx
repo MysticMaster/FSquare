@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
 import {AppDispatch, RootState} from "../../redux/store.ts";
-import {fetchCategory} from "../../redux/reducers/categorySlice.ts";
+import {fetchCategory, resetCategoryUpdateStatus} from "../../redux/reducers/categorySlice.ts";
 import CategoryUpdateForm from "./CategoryUpdateForm.tsx";
 import stateStatus from "../../utils/stateStatus.ts";
 import Loading from "../../components/Loading.tsx";
@@ -33,6 +33,7 @@ const CategoryDetail: React.FC<Props> = ({id}) => {
 
     const handleClick = () => {
         setIsUpdate(!isUpdate)
+        if (!isUpdate) dispatch(resetCategoryUpdateStatus());
     }
 
     return (

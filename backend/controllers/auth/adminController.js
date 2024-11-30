@@ -60,6 +60,24 @@ const authentication = async (req, res) => {
     }
 }
 
+const logout = async (req, res) => {
+    try {
+        res.cookie('Authorization', '', {
+            maxAge: 0,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict'
+        });
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status, 'Logout successfully'));
+    } catch (error) {
+        console.log(`logout ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+};
+
 export default {
-    authentication
+    authentication,
+    logout
 }

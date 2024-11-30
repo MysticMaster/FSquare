@@ -17,7 +17,7 @@ interface ClassificationOwn {
 interface Size {
     _id: string;
     classification: Classification;
-    sizeNumber: number;
+    sizeNumber: string;
     weight: number;
     quantity: number;
     createdAt: string;
@@ -35,7 +35,7 @@ interface Pagination {
     prevPage: number | null;
 }
 
-interface ClassificationState {
+interface SizeState {
     classificationOwn: ClassificationOwn | null;
     sizes: Size[];
     size: Size | null;
@@ -51,7 +51,7 @@ interface ClassificationState {
     updateError: { code: number, error: string } | null;
 }
 
-const initialState: ClassificationState = {
+const initialState: SizeState = {
     classificationOwn: null,
     sizes: [],
     size: null,
@@ -67,15 +67,18 @@ const initialState: ClassificationState = {
     updateError: null
 }
 
-export const createSize = createAsyncThunk<Size, FormData, {
-    rejectValue: { code: number, error: string }
-}>(
+export const createSize = createAsyncThunk<Size, {
+    classification: string,
+    sizeNumber: string,
+    quantity: number,
+    weight: number
+}, { rejectValue: { code: number, error: string } }>(
     'sizes/createSize',
     async (sizeData, {rejectWithValue}) => {
         try {
             const response = await axiosClient.post(sizeApi.create, sizeData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    'Content-Type': 'application/json',
                 },
             });
 
@@ -89,6 +92,7 @@ export const createSize = createAsyncThunk<Size, FormData, {
         }
     }
 );
+
 
 export const fetchSizes = createAsyncThunk(
     'sizes/fetchSizes',
@@ -114,7 +118,10 @@ export const fetchSize = createAsyncThunk(
     }
 );
 
-export const updateSize = createAsyncThunk<Size, { id: string; sizeData: FormData }, {
+export const updateSize = createAsyncThunk<Size, {
+    id: string;
+    sizeData: { sizeNumber: string | null, quantity: number | null, weight: number | null, isActive: boolean | null }
+}, {
     rejectValue: { code: number, error: string }
 }>(
     'sizes/updateSize',
@@ -122,7 +129,7 @@ export const updateSize = createAsyncThunk<Size, { id: string; sizeData: FormDat
         try {
             const response = await axiosClient.patch(`${sizeApi.update}/${id}`, sizeData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    'Content-Type': 'application/json'
                 }
             });
 
@@ -151,7 +158,7 @@ const sizeSlice = createSlice({
             state.createStatus = stateStatus.idleState
             state.createError = null;
         },
-        resetUpdateStatus(state) {
+        resetSizeUpdateStatus(state) {
             state.updateStatus = stateStatus.idleState
             state.updateError = null;
         }
@@ -236,7 +243,7 @@ export const {
     setClassificationOwn,
     setSizeDetailId,
     resetCreateStatus,
-    resetUpdateStatus
+    resetSizeUpdateStatus
 } = sizeSlice.actions;
 
 export default sizeSlice.reducer;

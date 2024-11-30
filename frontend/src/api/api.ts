@@ -1,5 +1,6 @@
 export const authApi = {
-    login: "/auth/admin/v1/authentications"
+    login: "/auth/admin/v1/authentications",
+    logout: "/auth/admin/v1/authentications"
 }
 export const adminApi = {
     getProfile:"/api/admin/v1/admins/profile"
@@ -27,12 +28,15 @@ export const classificationApi = {
     getByShoesId:"/api/admin/v1/classifications/shoes",
     getById:"/api/admin/v1/classifications",
     update:"/api/admin/v1/classifications",
-    updateMedia:"/api/admin/v1/classifications/media",
+    addMedias:"/api/admin/v1/classifications/media",
     deleteMedia:"/api/admin/v1/classifications/media",
 }
 export const sizeApi={
-    create:"/api/admin/v1/size",
-    getByClassificationId:"/api/admin/v1/size/classifications",
-    getById:"/api/admin/v1/size",
-    update:"/api/admin/v1/size",
+    create:"/api/admin/v1/sizes",
+    getByClassificationId:"/api/admin/v1/sizes/classification",
+    getById:"/api/admin/v1/sizes",
+    update:"/api/admin/v1/sizes",
+}
+export const orderApi={
+    get:"/api/admin/v1/orders",
 }

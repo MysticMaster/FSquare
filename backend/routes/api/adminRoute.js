@@ -6,6 +6,7 @@ import categoryController from "../../controllers/api/admin/categoryController.j
 import shoesController from "../../controllers/api/admin/shoesController.js";
 import classificationController from "../../controllers/api/admin/classificationController.js";
 import sizeController from "../../controllers/api/admin/sizeController.js";
+import orderController from "../../controllers/api/admin/orderController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -33,18 +34,20 @@ router.get('/v1/shoes/:id', shoesController.getShoesById);
 router.patch('/v1/shoes/:id', upload.single('file'), shoesController.updateShoes);
 
 router.post('/v1/classifications', upload.fields([
-    {name: 'file', maxCount: 1},
-    {name: 'files', maxCount: 6}
+    {name: 'file', maxCount: 1}
 ]), classificationController.createClassification);
 router.get('/v1/classifications/shoes/:id', classificationController.getClassificationsByIdShoes);
 router.get('/v1/classifications/:id', classificationController.getClassificationById);
-router.patch('/v1/classifications/:id', classificationController.updateClassification);
+router.patch('/v1/classifications/:id', upload.single('file'), classificationController.updateClassification);
 router.patch('/v1/classifications/media/:id', upload.array('files'), classificationController.addMedias);
 router.delete('/v1/classifications/media/:id', classificationController.deleteMedia);
 
 router.post('/v1/sizes', sizeController.createSize);
-router.get('/v1/sizes/classifications/:id', sizeController.getSizeByIdClassification);
+router.get('/v1/sizes/classification/:id', sizeController.getSizeByIdClassification);
 router.get('/v1/sizes/:id', sizeController.getSizeById);
 router.patch('/v1/sizes/:id', sizeController.updateSize);
+
+router.get('/v1/orders', orderController.getOrders);
+router.get('/v1/orders/:id', orderController.getOrderById);
 
 export default router;

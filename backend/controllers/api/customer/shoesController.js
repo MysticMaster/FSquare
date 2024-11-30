@@ -126,10 +126,13 @@ const getShoes = async (req, res) => {
 }
 
 const getShoesById = async (req, res) => {
-    const customerId = req.user ? req.user.id : null; // Kiểm tra nếu `req.user` tồn tại
+    const customerId = req.user ? req.user.id : null;
 
     try {
-        const shoes = await Shoes.findById(req.params.id)
+        const shoes = await Shoes.findOne({
+            _id: req.params.id,
+            isActive: true
+        })
             .select('_id thumbnail brand category name describe description')
             .populate('brand', 'name')
             .populate('category', 'name')

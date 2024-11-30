@@ -16,6 +16,16 @@ import {deleteObjectCommand} from "../../../config/aswS3.js";
 
 const maxAge = 86400;
 
+const responseData = async (id, res) => {
+    const category = await Category.findById(id)
+        .select('_id thumbnail name createdAt isActive').lean();
+
+    if (!category) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found'));
+    if (category.thumbnail) category.thumbnail = await getSingleImage(`${categoryDir}/${thumbnailDir}`, category.thumbnail, maxAge);
+    category.shoesCount = await Shoes.countDocuments({category: category._id})
+    return category
+}
+
 const createCategory = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
@@ -32,13 +42,7 @@ const createCategory = async (req, res) => {
         if (req.file) category.thumbnail = await putSingleImage(`${categoryDir}/${thumbnailDir}`, req.file);
         await category.save();
 
-        const categoryData = await Category.findById(category._id)
-            .select('_id thumbnail name createdAt isActive').lean();
-
-        if (!categoryData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found'));
-        if (categoryData.thumbnail) categoryData.thumbnail = await getSingleImage(`${categoryDir}/${thumbnailDir}`, categoryData.thumbnail, maxAge);
-        categoryData.shoesCount = 0;
-
+        const categoryData = await responseData(category._id, res);
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status,
                 'A new category has been created',
@@ -116,12 +120,7 @@ const getCategories = async (req, res) => {
 
 const getCategoryById = async (req, res) => {
     try {
-        const category = await Category.findById(req.params.id)
-            .select('_id thumbnail name createdAt isActive').lean();
-
-        if (!category) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found'));
-        const categoryData = {...category}
-        if (categoryData.thumbnail) categoryData.thumbnail = await getSingleImage(`${categoryDir}/${thumbnailDir}`, categoryData.thumbnail, maxAge);
+        const categoryData = await responseData(req.params.id, res);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Category Successful',
@@ -137,7 +136,7 @@ const getCategoryById = async (req, res) => {
 const updateCategory = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
-    const { isActive} = req.body;
+    const {isActive} = req.body;
     let {name} = req.body;
     name = name.trim().replace(/\s+/g, ' ');
     try {
@@ -163,19 +162,8 @@ const updateCategory = async (req, res) => {
         }
 
         await category.save();
-        const categoryData = await Category.findById(category._id)
-            .select('_id thumbnail name createdAt isActive').lean();
 
-        if (!categoryData) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Category not found'));
-        if (categoryData.thumbnail) categoryData.thumbnail = await getSingleImage(`${categoryDir}/${thumbnailDir}`, categoryData.thumbnail, maxAge);
-
-        const categoryCountResult = await Shoes.aggregate([
-            {$match: {category: categoryData._id}},
-            {$group: {_id: "$category", count: {$sum: 1}}}
-        ]);
-
-        categoryData.shoesCount = categoryCountResult.length > 0 ? categoryCountResult[0].count : 0;
-
+        const categoryData = await responseData(category._id, res);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Update Category Successful',

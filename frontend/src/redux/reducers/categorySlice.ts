@@ -143,7 +143,7 @@ const categorySlice = createSlice({
             state.createStatus = stateStatus.idleState;
             state.createError = null; // Reset lỗi
         },
-        resetUpdateStatus(state) {
+        resetCategoryUpdateStatus(state) {
             state.updateStatus = stateStatus.idleState;
             state.updateError = null;
         }
@@ -226,6 +226,6 @@ const categorySlice = createSlice({
 export const {
     setCategoryIdDetail,
     resetCreateStatus,
-    resetUpdateStatus
+    resetCategoryUpdateStatus
 } = categorySlice.actions;
 export default categorySlice.reducer;

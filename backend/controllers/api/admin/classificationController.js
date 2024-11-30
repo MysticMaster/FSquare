@@ -14,6 +14,17 @@ import Size from "../../../models/sizeModel.js";
 
 const maxAge = 86400;
 
+const responseData = async (id, res) => {
+    const classification = await Classification.findById(id)
+        .select('_id thumbnail color country price createdAt isActive')
+        .populate('shoes', '_id name')
+        .lean();
+    if (!classification) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Classification not found'));
+    if (classification.thumbnail) classification.thumbnail = await getSingleImage(`${classificationDir}/${thumbnailDir}`, classification.thumbnail, maxAge);
+    classification.sizeCount = await Size.countDocuments({classification: classification._id});
+    return classification;
+}
+
 const createClassification = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
@@ -25,7 +36,7 @@ const createClassification = async (req, res) => {
             color: new RegExp(`^${color}$`, 'i'),
             shoes: shoes
         });
-        if (existingClassification) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Classification with the same color already exists for this shoes'));
+        if (existingClassification) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Sản phẩm đã tồn tại phân loại với màu sắc này'));
         const classification = new Classification({
             shoes: shoes,
             color: color,
@@ -35,16 +46,14 @@ const createClassification = async (req, res) => {
         if (req.files && req.files['file']) {
             classification.thumbnail = await putSingleImage(`${classificationDir}/${thumbnailDir}`, req.files['file'][0]);
         }
-        if (req.files && req.files['files']) {
-            const {images, videos} = await putFiles(classificationDir, req.files['files']);
-            classification.images = images;
-            classification.videos = videos;
-        }
         await classification.save();
+
+        const classificationData = await responseData(classification._id, res)
+
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status,
                 'A new classification has been created',
-                classification
+                classificationData
             ));
     } catch (error) {
         console.log(`createClassification ${error.message}`);
@@ -73,14 +82,14 @@ const getClassificationsByIdShoes = async (req, res) => {
             .skip((currentPage - 1) * sizePage)
             .limit(sizePage)
             .select('_id thumbnail color country price createdAt isActive')
-            .populate('shoes','_id name')
+            .populate('shoes', '_id name')
             .lean();
 
         const classificationsIds = classifications.map(classifications => classifications._id);
 
         const sizeCounts = await Size.aggregate([
-            {$match: {classifications: {$in: classificationsIds}}},
-            {$group: {_id: "$classifications", count: {$sum: 1}}}
+            {$match: {classification: {$in: classificationsIds}}},
+            {$group: {_id: "$classification", count: {$sum: 1}}}
         ]);
 
         const classificationsData = await Promise.all(classifications.map(async (classification) => {
@@ -122,13 +131,13 @@ const getClassificationsByIdShoes = async (req, res) => {
 const getClassificationById = async (req, res) => {
     try {
         const classification = await Classification.findById(req.params.id)
-            .select('_id thumbnail images videos color country price createdAt isActive')
+            .select('_id thumbnail color country price createdAt isActive')
+            .populate('shoes', '_id name')
             .lean();
         if (!classification) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Classification not found'));
         const classificationData = {...classification};
         if (classificationData.thumbnail) classificationData.thumbnail = await getSingleImage(`${classificationDir}/${thumbnailDir}`, classificationData.thumbnail, maxAge);
-        if (classificationData.images) classificationData.images = await getFiles(`${classificationDir}/${imageDir}`, classificationData.images, maxAge, true);
-        if (classificationData.videos) classificationData.videos = await getFiles(`${classificationDir}/${videoDir}`, classificationData.videos, maxAge, true);
+
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Classification Successful',
@@ -145,16 +154,17 @@ const updateClassification = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {color, country, price, isActive} = req.body;
+
     try {
         const classification = await Classification.findById(req.params.id)
             .select('_id shoes thumbnail color country price isActive');
-        if (!classification) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Classification not found'));
+        if (!classification) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Phân loại không tồn tại'));
         if (color && color !== '') {
             const existingClassification = await Classification.findOne({
                 color: new RegExp(`^${color}$`, 'i'),
                 shoes: classification.shoes
             });
-            if (existingClassification && existingClassification.color !== classification.color) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Classification with the same color already exists for this shoes'));
+            if (existingClassification && existingClassification.color !== classification.color) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Sản phẩm đã tồn tại phân loại với màu sắc này'));
             classification.color = color;
         }
         if (country) classification.country = country;
@@ -168,10 +178,13 @@ const updateClassification = async (req, res) => {
             }
         }
         await classification.save();
+
+        const classificationData = await responseData(classification._id, res)
+
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Update Classification Successful',
-                classification
+                classificationData
             ));
     } catch (error) {
         console.log(`updateClassification ${error.message}`);
@@ -203,16 +216,6 @@ const addMedias = async (req, res) => {
             }
         }
 
-        if (classification.images.length + newImagesCount > 5) {
-            return res.status(badRequestResponse.code)
-                .json(responseBody(badRequestResponse.status, 'Adding these images would exceed the limit of 5'));
-        }
-
-        if (classification.videos.length + newVideosCount > 5) {
-            return res.status(badRequestResponse.code)
-                .json(responseBody(badRequestResponse.status, 'Adding these videos would exceed the limit of 5'));
-        }
-
         if (req.files) {
             const {images, videos} = await putFiles(classificationDir, req.files);
 
@@ -223,8 +226,7 @@ const addMedias = async (req, res) => {
         await classification.save();
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
-                'Medias added successfully',
-                classification
+                'Add Medias Successful'
             ));
     } catch (error) {
         console.log(`addMedias ${error.message}`);
@@ -236,7 +238,7 @@ const addMedias = async (req, res) => {
 const deleteMedia = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
-    const {key} = req.body;
+    const {key} = req.query;
     try {
         if (!key) {
             return res.status(badRequestResponse.code)
@@ -264,8 +266,7 @@ const deleteMedia = async (req, res) => {
 
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
-                `Deleted ${mediaType.slice(0, -1)} successfully`,
-                classification
+                `Deleted ${mediaType.slice(0, -1)} successfully`
             ));
     } catch (error) {
         console.log(`deleteMedia ${error.message}`);

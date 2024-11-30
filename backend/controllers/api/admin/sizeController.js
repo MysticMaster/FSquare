@@ -10,18 +10,30 @@ import {
     forbiddenResponse
 } from "../../../utils/httpStatusCode.js";
 
+const responseData = async (id, res) => {
+    const size = await Size.findById(id)
+        .select('_id sizeNumber quantity weight createdAt isActive')
+        .populate('classification', '_id color')
+        .lean();
+    if (!size) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found'));
+    return size
+}
+
 const createSize = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
     const {classification, sizeNumber, quantity, weight} = req.body;
-    if (!classification || !sizeNumber || !quantity || !weight) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
+    if (classification === null || sizeNumber === null || quantity === null || weight === null) {
+        return res.status(badRequestResponse.code)
+            .json(responseBody(badRequestResponse.status, 'All fields are required'));
+    }
     if (quantity < 0) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Quantity must be greater than -1'));
     try {
         const existingSize = await Size.findOne({
             sizeNumber: new RegExp(`^${sizeNumber}$`, 'i'),
             classification: classification
         });
-        if (existingSize) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Size with the same size number already exists for this classification'));
+        if (existingSize) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Phân loại đã tồn tại kích cỡ này'));
         const size = new Size({
             classification: classification,
             sizeNumber: sizeNumber,
@@ -29,10 +41,11 @@ const createSize = async (req, res) => {
             quantity: quantity
         });
         await size.save();
+        const sizeData = await responseData(size._id, res)
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status,
                 'A new size has been created',
-                size
+                sizeData
             ));
     } catch (error) {
         console.log(`createSize ${error.message}`);
@@ -60,7 +73,8 @@ const getSizeByIdClassification = async (req, res) => {
             .sort({createdAt: -1})
             .skip((currentPage - 1) * sizePage)
             .limit(sizePage)
-            .select('_id sizeNumber quantity createdAt isActive')
+            .select('_id sizeNumber quantity weight createdAt isActive')
+            .populate('classification', '_id color')
             .lean();
 
         const hasNextPage = currentPage < totalPages;
@@ -91,14 +105,11 @@ const getSizeByIdClassification = async (req, res) => {
 
 const getSizeById = async (req, res) => {
     try {
-        const size = await Size.findById(req.params.id)
-            .select('_id sizeNumber quantity createdAt isActive')
-            .lean()
-        if (!size) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found'));
+        const sizeData = await responseData(req.params.id, res)
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Size Successful',
-                size
+                sizeData
             ));
     } catch (error) {
         console.log(`getSizeById ${error.message}`);
@@ -110,10 +121,10 @@ const getSizeById = async (req, res) => {
 const updateSize = async (req, res) => {
     const user = req.user;
     if (user.authority !== 'superAdmin') return res.status(forbiddenResponse.code).send(responseBody(forbiddenResponse.status, 'Access denied, you are not super admin'));
-    const {sizeNumber, quantity, isActive} = req.body;
+    const {sizeNumber, quantity, weight, isActive} = req.body;
     try {
         const size = await Size.findById(req.params.id)
-            .select('_id classification sizeNumber quantity isActive');
+            .select('_id classification sizeNumber quantity weight isActive');
         if (!size) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Size not found'));
 
         if (sizeNumber && sizeNumber !== '') {
@@ -121,18 +132,20 @@ const updateSize = async (req, res) => {
                 sizeNumber: new RegExp(`^${sizeNumber}$`, 'i'),
                 classification: size.classification
             });
-            if (existingSize && existingSize.sizeNumber !== size.sizeNumber) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Size with the same size number already exists for this classification'));
+            if (existingSize && existingSize.sizeNumber !== size.sizeNumber) return res.status(conflictResponse.code).json(responseBody(conflictResponse.status, 'Phân loại đã tồn tại kích cỡ này'));
             size.sizeNumber = sizeNumber
         }
 
-        if (quantity > -1) size.quantity = quantity
-        if (typeof isActive !== 'undefined') size.isActive = isActive;
+        if (quantity && quantity > -1) size.quantity = quantity
+        if (weight && weight > 0) size.weight = weight
+        if (isActive !== null) size.isActive = isActive;
 
         await size.save();
+        const sizeData = await responseData(size._id, res)
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Update Size Successful',
-                size
+                sizeData
             ));
     } catch (error) {
         console.log(`updateSize ${error.message}`);
