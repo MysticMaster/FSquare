@@ -150,6 +150,34 @@ export const fetchOrder = createAsyncThunk(
     }
 )
 
+export const updateOrder = createAsyncThunk<Order, {
+    id: string;
+    newStatus: string;
+}, {
+    rejectValue: { code: number, error: string }
+}>(
+    'orders/updateOrder',
+    async ({id, newStatus}, {rejectWithValue}) => {
+        try {
+            const response = await axiosClient.patch(`${orderApi.update}/${id}`, {
+                newStatus: newStatus
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (response.status === 200) {
+                return response.data.data;
+            } else {
+                return rejectWithValue({code: response.status, error: response.data.message});
+            }
+        } catch (error: any) {
+            return rejectWithValue({code: 500, error: error.message || 'Sự cố không xác định'});
+        }
+    }
+)
+
 const orderSlice = createSlice({
     name: 'orders',
     initialState,
@@ -157,6 +185,10 @@ const orderSlice = createSlice({
         setOrderDetailId: (state, action: PayloadAction<string | null>) => {
             state.detailId = action.payload;
         },
+        resetOrderUpdateStatus(state) {
+            state.updateStatus = stateStatus.idleState
+            state.updateError = null;
+        }
     },
     extraReducers: (builder) => {
         // Quản lý trạng thái cho fetchOrders
@@ -184,7 +216,7 @@ const orderSlice = createSlice({
                 state.fetchAllError = action.error.message || 'Failed to fetch orders';
             })
 
-        //Quản lý trạng thái cho fetchOrder
+        // Quản lý trạng thái cho fetchOrder
         builder
             .addCase(fetchOrder.pending, (state) => {
                 state.fetchStatus = stateStatus.loadingState;
@@ -197,12 +229,30 @@ const orderSlice = createSlice({
             .addCase(fetchOrder.rejected, (state, action) => {
                 state.fetchStatus = stateStatus.failedState;
                 state.fetchError = action.error.message || 'Failed to fetch order';
+            });
+
+        // Quản lý trạng thái cho updateOrder
+        builder
+            .addCase(updateOrder.pending, (state) => {
+                state.updateStatus = stateStatus.loadingState;
+                state.updateError = null
+            })
+            .addCase(updateOrder.fulfilled, (state, action) => {
+                const index = state.orders.findIndex(order => order._id === action.payload._id);
+                if (index !== -1) state.orders[index] = action.payload;
+                state.updateStatus = stateStatus.succeededState
+                state.updateError = null
+            })
+            .addCase(updateOrder.rejected, (state, action) => {
+                state.updateStatus = stateStatus.failedState;
+                state.updateError = action.payload || {code: 500, error: 'Sự cố không xác định'};
             })
     }
 });
 
 export const {
-    setOrderDetailId
+    setOrderDetailId,
+    resetOrderUpdateStatus
 } = orderSlice.actions;
 
 export default orderSlice.reducer;

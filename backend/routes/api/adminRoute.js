@@ -49,5 +49,6 @@ router.patch('/v1/sizes/:id', sizeController.updateSize);
 
 router.get('/v1/orders', orderController.getOrders);
 router.get('/v1/orders/:id', orderController.getOrderById);
+router.patch('/v1/orders/:id', orderController.updateOrderStatus);
 
 export default router;
