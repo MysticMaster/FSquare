@@ -17,6 +17,7 @@ const getShippingFee = async (req, res) => {
         clientOrderCode, toName, toPhone, toAddress, toWardName,
         toDistrictName, toProvinceName, codAmount, weight, content
     } = req.body;
+
     if (!clientOrderCode || !toName || !weight || !toPhone ||
         !toAddress || !toWardName || !toDistrictName ||
         !toProvinceName || !codAmount || !content) return res.status(badRequestResponse.code)

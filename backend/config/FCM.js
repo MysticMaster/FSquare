@@ -1,47 +1,26 @@
-import firebase from 'firebase-admin';
-import {readFileSync} from 'fs';
-import {resolve} from 'path';
+import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
 
-const fcmPath = resolve('config/fcm.json');
-const fcm = JSON.parse(readFileSync(fcmPath, 'utf8'));
+const fcm = JSON.parse(fs.readFileSync(path.resolve('config', 'fsquare_fcm.json'), 'utf-8'));
 
-firebase.initializeApp({
-    credential: firebase.credential.cert(fcm),
+admin.initializeApp({
+    credential: admin.credential.cert(fcm),
 });
 
-const sendDataMessage = async (fcmToken, data) => {
-    const message = {
-        data: data,
-        token: fcmToken
-    };
-
-    try {
-        const response = await firebase.messaging().send(message);
-        console.log('Successfully sent data message:', response);
-    } catch (error) {
-        console.log('Error sending data message:', error);
-    }
-};
-
-const sendNotification = async (fcmToken, title, body) => {
+export const sendNotification = async (fcmToken, title, body) => {
     const message = {
         notification: {
-            title: title,
-            body: body
+            title,
+            body,
         },
-        token: fcmToken
+        token: fcmToken,
     };
 
     try {
-        const response = await firebase.messaging().send(message);
-        console.log('Successfully sent message:', response);
+        await admin.messaging().send(message);
+        console.log('FCM Notification sent successfully');
     } catch (error) {
-        console.log('Error sending message:', error);
+        console.error('Error sending FCM notification:', error.message);
     }
 };
-
-export {
-    sendDataMessage,
-    sendNotification
-}
-
