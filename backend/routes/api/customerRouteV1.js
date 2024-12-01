@@ -3158,7 +3158,7 @@ router.post('/reviews', upload.array('files', 5), shoesReviewController.createSh
  *                   type: string
  *                   example: ShoesId is required
  *       404:
- *         description: No reviews found for this shoes.
+ *         description: No reviews found for shoes.
  *         content:
  *           application/json:
  *             schema:
@@ -3169,7 +3169,7 @@ router.post('/reviews', upload.array('files', 5), shoesReviewController.createSh
  *                   example: error
  *                 message:
  *                   type: string
- *                   example: No reviews found for this shoes
+ *                   example: No reviews found for shoes
  *       500:
  *         description: Internal server error.
  *         content:

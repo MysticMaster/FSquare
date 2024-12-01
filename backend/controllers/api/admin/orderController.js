@@ -1,17 +1,42 @@
 import Order from "../../../models/orderModel.js";
 import {
-    successResponse, createdResponse,
-    internalServerErrorResponse, notFoundResponse, badRequestResponse
+    successResponse,
+    internalServerErrorResponse, notFoundResponse, badRequestResponse, serviceUnavailableResponse, conflictResponse
 } from "../../../utils/httpStatusCode.js";
-import {generateString, responseBody} from "../../../utils/generate.js";
+import {responseBody} from "../../../utils/generate.js";
 import {orderStatus} from "../../../utils/orderStatus.js";
-import {orderPreview} from "../../../utils/ghn.js";
+import {createOrderInGHN, orderPreview} from "../../../utils/ghn.js";
 import {getSingleImage} from '../../../utils/media.js';
 import {classificationDir, thumbnailDir} from '../../../utils/directory.js';
 import Statistical from "../../../models/statisticalModel.js";
-import Brand from "../../../models/brandModel.js";
+import {sendNotification} from "../../../config/FCM.js";
+import Notification from "../../../models/notificationModel.js";
+import Size from "../../../models/sizeModel.js";
 
 const maxAge = 86400;
+
+const responseData = async (id, res) => {
+    const order = await Order.findById(id)
+        .populate({
+            path: 'customer',
+            select: '_id firstName lastName email phone'
+        })
+        .select('_id customer clientOrderCode shippingAddress codAmount shippingFee orderItems weight isFreeShip isPayment status createdAt')
+        .lean();
+
+    return {
+        _id: order._id,
+        clientOrderCode: order.clientOrderCode,
+        customer: order.customer,
+        shippingAddress: order.shippingAddress,
+        orderItems: order.orderItems.length,
+        weight: order.weight,
+        codAmount: order.codAmount,
+        shippingFee: order.shippingFee,
+        status: order.status,
+        createdAt: order.createdAt,
+    };
+}
 
 const getOrders = async (req, res) => {
     const sizePage = parseInt(req.query.size, 10) || 10;
@@ -163,118 +188,116 @@ const getOrderById = async (req, res) => {
 };
 
 
-//
-// const updateOrderStatus = async (req, res) => {
-//     const {newStatus} = req.body;
-//
-//     // Chỉ cho phép các trạng thái được xác định
-//     const allowedStatuses = [orderStatus.confirmed, orderStatus.cancelled, orderStatus.returned];
-//
-//     // Kiểm tra trạng thái mới
-//     if (!newStatus || !allowedStatuses.includes(newStatus)) {
-//         return res.status(badRequestResponse.code)
-//             .json(responseBody(badRequestResponse.status, 'Invalid status'));
-//     }
-//
-//     try {
-//         // Tìm đơn hàng
-//         const order = await Order.findById(req.params.id).populate('orderItems.shoes');
-//
-//         // Kiểm tra nếu đơn hàng không tồn tại
-//         if (!order) {
-//             return res.status(notFoundResponse.code)
-//                 .json(responseBody(notFoundResponse.status, 'Order not found'));
-//         }
-//
-//         // Tạo mới bản ghi Statistical nếu trạng thái mới là confirmed
-//         if (newStatus === orderStatus.confirmed) {
-//             for (const item of order.orderItems) {
-//                 await createStatistical(item.shoes, item.quantity, item.price);
-//             }
-//         }
-//
-//         // Tìm và cập nhật trạng thái đơn hàng
-//         const updatedOrder = await Order.findByIdAndUpdate(
-//             req.params.id,
-//             {
-//                 status: newStatus,
-//                 [`statusTimestamps.${newStatus}`]: new Date(), // Cập nhật thời gian cho trạng thái mới
-//             },
-//             {new: true} // Trả về tài liệu đã cập nhật
-//         );
-//
-//         // Trả về phản hồi thành công
-//         res.status(successResponse.code)
-//             .json(responseBody(successResponse.status, 'Order status updated successfully', updatedOrder));
-//     } catch (error) {
-//         console.log(`updateOrderStatus Error: ${error.message}`);
-//         res.status(internalServerErrorResponse.code)
-//             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
-//     }
-// };
-//
-// const createStatistical = async (shoesId, quantity, price) => {
-//     const revenue = quantity * price;
-//
-//     await Statistical.create({
-//         shoes: shoesId,
-//         sales: quantity,
-//         revenue: revenue
-//     });
-// };
-//
-// const deleteOrder = async (req, res) => {
-//     const orderId = req.params.id;
-//     try {
-//         const order = await Order.findByIdAndUpdate(orderId,
-//             {
-//                 isActive: false
-//             }, {new: true});
-//         if (!order) return res.status(notFoundResponse.code)
-//             .json(responseBody(notFoundResponse.status, 'Order not found'));
-//         res.status(successResponse.code)
-//             .json(responseBody(successResponse.status, 'Order status updated successfully', order._id));
-//     } catch (error) {
-//         console.log(`deleteOrder Error: ${error.message}`);
-//         res.status(internalServerErrorResponse.code)
-//             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
-//     }
-// };
+const updateOrderStatus = async (req, res) => {
+    const {newStatus} = req.body;
+
+    const allowedStatuses = [orderStatus.processing, orderStatus.cancelled, orderStatus.shipped];
+
+    if (!newStatus || !allowedStatuses.includes(newStatus)) {
+        return res.status(badRequestResponse.code)
+            .json(responseBody(badRequestResponse.status, 'Invalid status'));
+    }
+
+    try {
+        const order = await Order.findById(req.params.id)
+            .select('_id customer clientOrderCode orderItems content statusTimestamps')
+            .populate('customer', '_id fcmToken');
+
+        if (!order) {
+            return res.status(notFoundResponse.code)
+                .json(responseBody(notFoundResponse.status, 'Order not found'));
+        }
+
+        order.status = newStatus;
+        order.statusTimestamps[newStatus] = new Date();
+
+        let notificationTitle = '';
+        let notificationContent = '';
+
+        if (newStatus === orderStatus.processing) {
+            notificationTitle = 'Đơn hàng đã được xác nhận';
+            notificationContent = `Đơn hàng ${order.clientOrderCode} đang chuẩn bị giao cho đơn vị vận chuyển`;
+        }
+
+        if (newStatus === orderStatus.cancelled) {
+            order.content = 'Đơn hàng bị hủy do không xác minh được thông tin';
+            notificationTitle = 'Đơn hàng đã bị hủy';
+            notificationContent = `Đơn hàng ${order.clientOrderCode} đã bị hủy do không xác minh được thông tin đơn hàng`;
+        }
+
+        if (newStatus === orderStatus.shipped) {
+            try {
+                const quantitySizeUpdate = order.orderItems.map(async (item) => {
+                    const size = await Size.findById(item.size)
+                        .select('_id sizeNumber quantity');
+
+                    if (!size) {
+                        return res.status(notFoundResponse.code)
+                            .json(responseBody(notFoundResponse.status, 'Size not found'));
+                    }
+
+                    if (size.quantity < item.quantity) {
+                        return res.status(conflictResponse.code)
+                            .json(responseBody(conflictResponse.status, `Cỡ ${size.sizeNumber} không đủ tồn kho để giao hàng`));
+                    }
+
+                    size.quantity -= item.quantity;
+                    console.log('Đã cập nhật số lượng: '+ size.sizeNumber)
+                    await size.save();
+                });
+
+                await Promise.all(quantitySizeUpdate);
+
+                notificationTitle = 'Đơn hàng đã giao cho đơn vị vận chuyển';
+                notificationContent = `Đơn hàng ${order.clientOrderCode} đã bàn giao cho đơn vị vận chuyển`;
+            } catch (e) {
+                console.error(`Size Update Error: ${e.message}`);
+                return res.status(serviceUnavailableResponse.code)
+                    .json(responseBody(serviceUnavailableResponse.status, e.message));
+            }
+        }
+
+        await order.save()
+
+        const notificationTasks = [];
+
+        if (order.customer.fcmToken) {
+            notificationTasks.push(
+                sendNotification(order.customer.fcmToken, notificationTitle, notificationContent)
+            );
+        }
+
+        notificationTasks.push(
+            Notification.create({
+                customer: order.customer._id,
+                order: order._id,
+                title: notificationTitle,
+                content: notificationContent,
+            })
+        );
+
+        try {
+            await Promise.all(notificationTasks);
+        } catch (error) {
+            console.error(`Notification Error: ${error.message}`);
+        }
+
+        const orderData = await responseData(order._id, res);
+
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status, 'Order status updated successfully', orderData));
+    } catch (error) {
+        console.log(`updateOrderStatus Error: ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+};
 
 export default {
     getOrders,
-    getOrderById
+    getOrderById,
+    updateOrderStatus
 }
-
-// import cron from 'node-cron';
-//
-// // Thiết lập cron job chạy mỗi 10 phút
-// cron.schedule('*/10 * * * *', async () => {
-//     const orders = await Order.find({ status: { $ne: 'delivered' } }); // Lấy các đơn hàng chưa giao
-//     orders.forEach(order => {
-//         updateOrderStatus(order.orderID); // Cập nhật trạng thái cho từng đơn hàng
-//     });
-// });
-
-// const updateOrderStatus = async (orderID) => {
-//     try {
-//         // Lấy trạng thái từ GHTK
-//         const ghtkData = await getOrderStatusFromGHTK(orderID);
-//
-//         // Giả sử ghtkData có trường status để cập nhật
-//         const ghtkStatus = ghtkData.status; // Cần điều chỉnh theo cấu trúc dữ liệu của bạn
-//
-//         // Cập nhật vào cơ sở dữ liệu MongoDB
-//         await Order.updateOne(
-//             { orderID: orderID },
-//             { status: ghtkStatus }
-//         );
-//
-//         console.log(`Order status updated to: ${ghtkStatus}`);
-//     } catch (error) {
-//         console.error('Error updating order status:', error);
-//     }
-// };
 
 // const updateReturnStatus = async (req, res) => {
 //     const { orderId, newReturnStatus } = req.body;
