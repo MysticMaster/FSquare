@@ -4,6 +4,7 @@ const shoesDir = 'shoes';
 const classificationDir = 'classifications';
 const adminDir = 'admins';
 const customerDir = 'customers';
+const shoesReviewDir = 'reviews';
 
 const thumbnailDir = 'thumbnails';
 const avatarDir = 'avatars';
@@ -20,5 +21,6 @@ export {
     thumbnailDir,
     avatarDir,
     imageDir,
-    videoDir
+    videoDir,
+    shoesReviewDir
 }
