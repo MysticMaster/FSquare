@@ -47,7 +47,11 @@ const createOrder = async (req, res) => {
             .json(responseBody(badRequestResponse.status, 'All fields are required'));
     }
     try {
-        // Tạo đơn hàng mới
+
+        const statusTimestamps = {
+            pending: new Date()
+        };
+
         const newOrder = await Order.create({
             customer: userId,
             clientOrderCode: order.clientOrderCode,
@@ -59,7 +63,8 @@ const createOrder = async (req, res) => {
             content: order.content,
             isFreeShip: order.isFreeShip,
             isPayment: order.isPayment,
-            note: order.note
+            note: order.note,
+            statusTimestamps: statusTimestamps
         });
         res.status(createdResponse.code)
             .json(responseBody(createdResponse.status, 'Order created successfully', newOrder));
@@ -77,7 +82,7 @@ const getOrders = async (req, res) => {
     const currentPage = parseInt(req.query.page, 10) || 1;
 
     try {
-        const query = { customer: userId, status: status, isActive: true };
+        const query = {customer: userId, status: status, isActive: true};
         const totalOrders = await Order.countDocuments(query);
         const totalPages = Math.ceil(totalOrders / sizePage);
 
@@ -95,7 +100,7 @@ const getOrders = async (req, res) => {
                 }
             })
             .select('_id clientOrderCode codAmount shippingFee status createdAt orderItems')
-            .sort({ createdAt: -1 })
+            .sort({createdAt: -1})
             .skip((currentPage - 1) * sizePage)
             .limit(sizePage)
             .lean();
@@ -219,7 +224,7 @@ const getOrderById = async (req, res) => {
 };
 
 const updateOrderStatus = async (req, res) => {
-    const { newStatus } = req.body;
+    const {newStatus} = req.body;
 
     // Chỉ cho phép các trạng thái được xác định
     const allowedStatuses = [orderStatus.confirmed, orderStatus.cancelled, orderStatus.returned];
@@ -254,7 +259,7 @@ const updateOrderStatus = async (req, res) => {
                 status: newStatus,
                 [`statusTimestamps.${newStatus}`]: new Date(), // Cập nhật thời gian cho trạng thái mới
             },
-            { new: true } // Trả về tài liệu đã cập nhật
+            {new: true} // Trả về tài liệu đã cập nhật
         );
 
         // Trả về phản hồi thành công
@@ -272,8 +277,8 @@ const createStatistical = async (shoesId, quantity, price) => {
 
     await Statistical.create({
         shoes: shoesId,
-        sales:quantity,
-        revenue:revenue
+        sales: quantity,
+        revenue: revenue
     });
 };
 
