@@ -12,6 +12,7 @@ import categoryController from "../../controllers/api/customer/categoryControlle
 import classificationController from "../../controllers/api/customer/classificationController.js";
 import sizeController from "../../controllers/api/customer/sizeController.js";
 import paymentController from "../../controllers/api/customer/paymentController.js";
+import shoesReviewController from "../../controllers/api/customer/shoesReviewController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -106,7 +107,7 @@ router.get('/customers/profile', customerController.getProfile);
  * /v1/customers/profile:
  *   patch:
  *     summary: Update Customer Profile
- *     description: Updates the customer's profile information. Requires authentication.
+ *     description: Cập nhật thông tin tài khoản, đổi avatar thì gửi theo tag file
  *     security:
  *      - bearerAuth: []
  *     requestBody:
@@ -2940,5 +2941,249 @@ router.get('/payments', paymentController.getPayments);
  *                   example: Server error
  */
 router.post('/payments/detail', paymentController.checkPayment);
+
+/**
+ * @swagger
+ * /v1/reviews:
+ *   post:
+ *     summary: "Create a shoes review"
+ *     description: "Ảnh, video thì gửi lên với tag là files, giới hạn 5 cai tất cả."
+ *     security:
+ *       - BearerAuth: []  # Assuming you use Bearer token for authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               order:
+ *                 type: string
+ *                 description: "The ID of the order the review is for."
+ *                 example: "606c72ef87f4e91e4b7c58a1"
+ *               rating:
+ *                 type: integer
+ *                 description: "Rating for the shoes, between 1 and 5."
+ *                 example: 4
+ *               content:
+ *                 type: string
+ *                 description: "The content of the review."
+ *                 example: "Great shoes, very comfortable!"
+ *     responses:
+ *       201:
+ *         description: "Review created successfully."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Review created successfully."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     shoes:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         example: "606c72ef87f4e91e4b7c58a1"
+ *                     customer:
+ *                       type: string
+ *                       example: "606c72ef87f4e91e4b7c58a2"
+ *                     rating:
+ *                       type: integer
+ *                       example: 4
+ *                     content:
+ *                       type: string
+ *                       example: "Great shoes, very comfortable!"
+ *       400:
+ *         description: "Bad request. Missing required fields."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "All fields are required"
+ *       404:
+ *         description: "Order not found."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "Order not found"
+ *       403:
+ *         description: "Forbidden. You are not authorized to review this order."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "You are not authorized to review this order"
+ *       500:
+ *         description: "Internal server error."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "Server error"
+ *     multipart:
+ *       - name: files
+ *         description: "Optional files (images/videos) related to the review."
+ *         required: false
+ *         content:
+ *           multipart/form-data:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 files:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                     format: binary
+ *                   description: "An array of files (images or videos)."
+ *             encoding:
+ *               files:
+ *                 contentType: multipart/form-data
+ */
+router.post('/reviews', upload.array('files', 5), shoesReviewController.createShoesReview);
+
+/**
+ * @swagger
+ * /v1/reviews/shoes/{id}:
+ *   get:
+ *     summary: Get reviews for a specific shoes by its ID
+ *     description: Retrieves all reviews for a specific shoes, including rating, content, images, and videos.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the shoes for which to retrieve reviews.
+ *         schema:
+ *           type: string
+ *           example: 609b6e48f6d4c3f4a6d1e831
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved the reviews for the shoes.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Get Review Successful
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: 60fbd9c8f8f9f52b8c3a4b7d
+ *                       customer:
+ *                         type: object
+ *                         properties:
+ *                           firstName:
+ *                             type: string
+ *                             example: John
+ *                           lastName:
+ *                             type: string
+ *                             example: Doe
+ *                           avatar:
+ *                             type: string
+ *                             example: https://example.com/avatar.jpg
+ *                       rating:
+ *                         type: number
+ *                         example: 4
+ *                       content:
+ *                         type: string
+ *                         example: Great shoes, very comfortable!
+ *                       images:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                           example: https://example.com/image1.jpg
+ *                       videos:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                           example: https://example.com/video1.mp4
+ *                       feedback:
+ *                         type: string
+ *                         example: Highly recommend this product!
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: 2024-12-01T12:34:56Z
+ *       400:
+ *         description: Bad Request - shoesId is required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: ShoesId is required
+ *       404:
+ *         description: No reviews found for this shoes.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: No reviews found for this shoes
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error: error message"
+ */
+router.get('/reviews/shoes/:id', shoesReviewController.getReviewByShoesId);
 
 export default router;
