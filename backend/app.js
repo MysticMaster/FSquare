@@ -18,7 +18,7 @@ connectDB().then(r => {
 });
 
 const corsOptions = {
-    origin: ['http://localhost:5173','http://51.79.156.193:5173'],
+    origin: ['http://localhost:5173', 'http://51.79.156.193:5173'],
     credentials: true,
     optionsSuccessStatus: 200
 };
@@ -35,7 +35,7 @@ app.use(bodyParser.json());
 
 app.use('/auth', auth);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use('/api/admin',authentication('admin'),  adminRoute);
+app.use('/api/admin', authentication('admin'), adminRoute);
 app.use('/api/customer/v1', authentication('customer'), customerRouteV1);
 app.use('/api/customer/v2', customerRouteV2);
 

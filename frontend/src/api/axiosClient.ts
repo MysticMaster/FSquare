@@ -2,7 +2,8 @@ import axios from 'axios';
 import {resetAuthority} from "../redux/reducers/authSlice.ts";
 
 const axiosClient = axios.create({
-    baseURL: 'http://51.79.156.193:5000',
+     baseURL: 'http://51.79.156.193:5000',
+    //baseURL: 'http://localhost:5000',
     headers: {
         'Accept': 'application/json',
     },
