@@ -85,7 +85,7 @@ const OrderSchema = new mongoose.Schema({
         default: 'pending'
     },
     statusTimestamps: {
-        pending: {type: Date, default: Date.now()},  // Thời gian khi đơn hàng ở trạng thái 'pending'
+        pending: {type: Date},  // Thời gian khi đơn hàng ở trạng thái 'pending'
         processing: {type: Date},  // Thời gian khi đơn hàng ở trạng thái 'processing'
         shipped: {type: Date},     // Thời gian khi đơn hàng ở trạng thái 'shipped'
         delivered: {type: Date},   // Thời gian khi đơn hàng ở trạng thái 'delivered'
