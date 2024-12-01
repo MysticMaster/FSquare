@@ -8,6 +8,7 @@ import TextButton from "../../components/button/TextButton.tsx";
 import DetailTitle from "../../components/title/DetailTitle.tsx";
 import {fetchClassification, resetClassificationUpdateStatus} from "../../redux/reducers/classificationSlice.ts";
 import {fetchOrder} from "../../redux/reducers/orderSlice.ts";
+import {formatDateTime} from "../../utils/formatDateTime.ts";
 
 interface Props {
     id: string;
@@ -38,14 +39,10 @@ const formatStatusTimestamps = (statusTimestamps: StatusTimestamps) => {
     return Object.entries(statusTimestamps)
         .filter(([, timestamp]) => timestamp)
         .map(([status, timestamp]) => {
-            const date = new Date(timestamp);
-            const formattedTime = date
-                .toLocaleTimeString("vi-VN", {hour12: false});
-            const formattedDate = date
-                .toLocaleDateString("vi-VN");
+
             return {
                 label: statusLabels[status] || status,
-                formattedTimestamp: `${formattedTime} ${formattedDate}`,
+                formattedTimestamp: formatDateTime(timestamp, false),
             };
         });
 };

@@ -59,6 +59,8 @@ const createPaymentURL = async (req, res) => {
             {headers}
         );
 
+        console.log('createPaymentURL: '+response.data)
+
         if (response.data.code !== 0) return res.status(conflictResponse.code)
             .json(responseBody(conflictResponse.status, `Unknown response: ${response.data.message}`));
 

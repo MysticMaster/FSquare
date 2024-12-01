@@ -100,7 +100,7 @@ const BrandItem: React.FC<Props> = ({order, onClick, onSelect, isSelected}) => {
                     <span className="text-red-500">Thanh toán<br/>khi nhận hàng</span>
                 )}
             </td>
-            <td className="py-2 px-2 border-b border-gray-300 text-sm text-start">{formatDateTime(order.createdAt)}</td>
+            <td className="py-2 px-2 border-b border-gray-300 text-sm text-start">{formatDateTime(order.createdAt,false)}</td>
             <td className="py-2 px-2 border-b border-gray-300 text-sm text-start">
                 <button className="text-blue-500 hover:underline" onClick={() => {
                     onClick();
