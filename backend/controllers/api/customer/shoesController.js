@@ -7,7 +7,7 @@ import {
 import {getSingleImage} from "../../../utils/media.js";
 import {shoesDir, thumbnailDir} from "../../../utils/directory.js";
 import Classification from "../../../models/classificationModel.js";
-import ShoesReview from "../../../models/shoesReview.js";
+import ShoesReview from "../../../models/shoesReviewModel.js";
 import Favorite from "../../../models/favoriteModel.js";
 import Statistical from "../../../models/statisticalModel.js";
 
@@ -67,7 +67,6 @@ const getShoes = async (req, res) => {
             }
         ]);
 
-        // Nếu `customerId` tồn tại, thực hiện các thao tác liên quan đến yêu thích
         let favoriteShoesIds = [];
         if (customerId) {
             const favoriteData = await Favorite.find({customer: customerId, shoes: {$in: shoesIds}})
@@ -90,7 +89,7 @@ const getShoes = async (req, res) => {
                 reviewCount: reviewInfo ? reviewInfo.reviewCount : 0,
                 sales: statisticalInfo ? statisticalInfo.sales : 0
             };
-            if (customerId) shoeData.isFavorite = customerId ? favoriteShoesIds.includes(shoe._id.toString()) : false
+            if (customerId) shoeData.isFavorite = customerId ? favoriteShoesIds.includes(shoe._id.toString()) : false;
 
             if (shoe.thumbnail) {
                 shoeData.thumbnail = await getSingleImage(`${shoesDir}/${thumbnailDir}`, shoe.thumbnail, maxAge);
@@ -123,7 +122,8 @@ const getShoes = async (req, res) => {
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
-}
+};
+
 
 const getShoesById = async (req, res) => {
     const customerId = req.user ? req.user.id : null;

@@ -5,7 +5,7 @@ import {
 } from "../../../utils/httpStatusCode.js";
 import {responseBody} from "../../../utils/generate.js";
 import Classification from "../../../models/classificationModel.js";
-import ShoesReview from "../../../models/shoesReview.js";
+import ShoesReview from "../../../models/shoesReviewModel.js";
 import {getSingleImage} from "../../../utils/media.js";
 import {shoesDir, thumbnailDir} from "../../../utils/directory.js";
 import Statistical from "../../../models/statisticalModel.js";
