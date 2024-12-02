@@ -200,7 +200,7 @@ const updateOrderStatus = async (req, res) => {
 
     try {
         const order = await Order.findById(req.params.id)
-            .select('_id customer shippingAddress clientOrderCode orderItems weight content statusTimestamps')
+            .select('_id customer shippingAddress clientOrderCode orderItems weight codAmount isPayment content statusTimestamps')
             .populate('customer', '_id fcmToken');
 
         if (!order) {
