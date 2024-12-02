@@ -13,6 +13,7 @@ import classificationController from "../../controllers/api/customer/classificat
 import sizeController from "../../controllers/api/customer/sizeController.js";
 import paymentController from "../../controllers/api/customer/paymentController.js";
 import shoesReviewController from "../../controllers/api/customer/shoesReviewController.js";
+import statisticalController from "../../controllers/api/customer/statisticalController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -3185,5 +3186,7 @@ router.post('/reviews', upload.array('files', 5), shoesReviewController.createSh
  *                   example: "Server error: error message"
  */
 router.get('/reviews/shoes/:id', shoesReviewController.getReviewByShoesId);
+
+router.get('/statistical', statisticalController.getTop5);
 
 export default router;
