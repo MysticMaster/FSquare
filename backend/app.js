@@ -16,6 +16,7 @@ import cron from 'node-cron';
 import {getOrderStatusFromGHN} from "./utils/ghn.js";
 import Order from "./models/orderModel.js";
 import {orderStatus} from "./utils/orderStatus.js";
+import Statistical from "./models/statisticalModel.js";
 
 const app = express();
 
@@ -47,14 +48,16 @@ app.use('/api/customer/v2', customerRouteV2);
 cron.schedule('*/5 * * * *', async () => {
     try {
         console.log('Chạy: ' + new Date());
-        const orders = await Order.find({ status: orderStatus.shipped })
+        const orders = await Order.find({status: orderStatus.shipped})
             .select('_id')
+            .limit(20)
             .lean();
 
         await Promise.all(orders.map(order => autoDeliveredStatusFake(order._id)));
 
-        const deliveredOrders = await Order.find({ status: orderStatus.delivered })
+        const deliveredOrders = await Order.find({status: orderStatus.delivered})
             .select('_id')
+            .limit(20)
             .lean();
 
         const fourDaysAgo = new Date();
@@ -107,16 +110,41 @@ const autoDeliveredStatusFake = async (id) => {
 
 const autoConfirmedStatus = async (id) => {
     try {
+        const order = await Order.findById(id).populate({
+            path: 'orderItems.shoes',
+            select: '_id'
+        });
+
+        if (!order) {
+            console.error('Order not found');
+            return;
+        }
+
+        const statisticalTasks = order.orderItems.map(item => {
+            const revenue = item.quantity * item.price;
+            return Statistical.create({
+                shoes: item.shoes,
+                sales: item.quantity,
+                revenue: revenue
+            });
+        });
+
+        await Promise.all(statisticalTasks);
+
         await Order.updateOne(
             {_id: id},
             {
-                status: orderStatus.confirmed,
-                [`statusTimestamps.${orderStatus.confirmed}`]: new Date(),
+                $set: {
+                    status: orderStatus.confirmed,
+                    [`statusTimestamps.${orderStatus.confirmed}`]: new Date()
+                }
             }
         );
+
+        console.log(`Order ${id} status auto-confirmed successfully`);
     } catch (error) {
-        console.error('autoConfirmedStatus:', error);
+        console.error('autoConfirmedStatus:', error.message);
     }
-}
+};
 
 export default app;
