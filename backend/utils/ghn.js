@@ -141,7 +141,7 @@ const createOrderInGHN = async (order) => {
             to_ward_name: order.shippingAddress.toWardName,
             to_district_name:order.shippingAddress.toDistrictName,
             to_province_name: order.shippingAddress.toProvinceName,
-            cod_amount: order.codAmount,
+            cod_amount: order.isPayment ? 0 : order.codAmount,
             weight: order.weight,
             content: order.content,
             note:order.note
