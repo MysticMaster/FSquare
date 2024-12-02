@@ -77,16 +77,16 @@ const getShoes = async (req, res) => {
         }
 
         const shoesData = await Promise.all(shoes.map(async (shoe) => {
-            const priceRange = priceRanges.find(pr => pr._id.equals(shoe._id));
-            const reviewInfo = reviewData.find(rd => Array.isArray(rd._id) && rd._id[0].equals(shoe._id));
+            const priceRange = priceRanges.find(pr => pr._id.equals(shoe._id))|| {minPrice: 0, maxPrice: 0};
+            const reviewInfo = reviewData.find(rd => Array.isArray(rd._id) && rd._id[0].equals(shoe._id)) || {avgRating: 0, reviewCount: 0};
             const statisticalInfo = statisticalData.find(sd => sd.shoes.equals(shoe._id));
             const shoeData = {
                 _id: shoe._id,
                 name: shoe.name,
-                minPrice: priceRange ? priceRange.minPrice : 0,
-                maxPrice: priceRange ? priceRange.maxPrice : 0,
-                rating: reviewInfo ? reviewInfo.avgRating.toFixed(1) : 0,
-                reviewCount: reviewInfo ? reviewInfo.reviewCount : 0,
+                minPrice: priceRange.minPrice,
+                maxPrice: priceRange.maxPrice,
+                rating: reviewInfo.avgRating,
+                reviewCount: reviewInfo.reviewCount,
                 sales: statisticalInfo ? statisticalInfo.sales : 0
             };
             if (customerId) shoeData.isFavorite = customerId ? favoriteShoesIds.includes(shoe._id.toString()) : false;
