@@ -78,7 +78,7 @@ const getShoes = async (req, res) => {
 
         const shoesData = await Promise.all(shoes.map(async (shoe) => {
             const priceRange = priceRanges.find(pr => pr._id.equals(shoe._id));
-            const reviewInfo = reviewData.find(rd => rd._id.equals(shoe._id));
+            const reviewInfo = reviewData.find(rd => Array.isArray(rd._id) && rd._id[0].equals(shoe._id));
             const statisticalInfo = statisticalData.find(sd => sd.shoes.equals(shoe._id));
             const shoeData = {
                 _id: shoe._id,

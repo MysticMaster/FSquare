@@ -127,6 +127,8 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
     useEffect(() => {
         if (updateStatus === stateStatus.succeededState) {
             handleUpdateSuccess()
+        }else {
+            dispatch(resetOrderUpdateStatus())
         }
     }, [updateStatus]);
 

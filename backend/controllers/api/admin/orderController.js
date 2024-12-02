@@ -200,7 +200,7 @@ const updateOrderStatus = async (req, res) => {
 
     try {
         const order = await Order.findById(req.params.id)
-            .select('_id customer clientOrderCode orderItems content statusTimestamps')
+            .select('_id customer shippingAddress clientOrderCode orderItems weight content statusTimestamps')
             .populate('customer', '_id fcmToken');
 
         if (!order) {
@@ -227,26 +227,27 @@ const updateOrderStatus = async (req, res) => {
 
         if (newStatus === orderStatus.shipped) {
             try {
-                const quantitySizeUpdate = order.orderItems.map(async (item) => {
-                    const size = await Size.findById(item.size)
-                        .select('_id sizeNumber quantity');
-
+                const errors = [];
+                await Promise.all(order.orderItems.map(async (item) => {
+                    const size = await Size.findById(item.size).select('_id sizeNumber quantity');
                     if (!size) {
-                        return res.status(notFoundResponse.code)
-                            .json(responseBody(notFoundResponse.status, 'Size not found'));
+                        errors.push('Size not found');
+                        return;
                     }
-
                     if (size.quantity < item.quantity) {
-                        return res.status(conflictResponse.code)
-                            .json(responseBody(conflictResponse.status, `Cỡ ${size.sizeNumber} không đủ tồn kho để giao hàng`));
+                        errors.push(`Cỡ ${size.sizeNumber} không đủ tồn kho để giao hàng`);
+                        return;
                     }
-
                     size.quantity -= item.quantity;
-                    console.log('Đã cập nhật số lượng: '+ size.sizeNumber)
                     await size.save();
-                });
+                }));
 
-                await Promise.all(quantitySizeUpdate);
+                if (errors.length > 0) {
+                    return res.status(conflictResponse.code)
+                        .json(responseBody(conflictResponse.status, errors.join(', ')));
+                }
+
+                await createOrderInGHN(order);
 
                 notificationTitle = 'Đơn hàng đã giao cho đơn vị vận chuyển';
                 notificationContent = `Đơn hàng ${order.clientOrderCode} đã bàn giao cho đơn vị vận chuyển`;
@@ -287,7 +288,7 @@ const updateOrderStatus = async (req, res) => {
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Order status updated successfully', orderData));
     } catch (error) {
-        console.log(`updateOrderStatus Error: ${error.message}`);
+        console.log(`Shipped Error: ${error.message}`);
         res.status(internalServerErrorResponse.code)
             .json(responseBody(internalServerErrorResponse.status, 'Server error'));
     }
