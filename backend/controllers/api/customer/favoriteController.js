@@ -89,7 +89,7 @@ const getFavorites = async (req, res) => {
             const shoe = fav.shoes;
 
             const priceRange = priceRanges.find(c => c._id.equals(shoe._id)) || {minPrice: 0, maxPrice: 0};
-            const reviewInfo = reviewData.find(r => r._id.equals(shoe._id)) || {avgRating: 0, reviewCount: 0};
+            const reviewInfo = reviewData.find(rd => Array.isArray(rd._id) && rd._id[0].equals(shoe._id)) || {avgRating: 0, reviewCount: 0};
             const statisticalInfo = statisticalData.find(sd => sd.shoes.equals(shoe._id));
             const shoesData = {
                 _id: fav._id,
