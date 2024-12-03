@@ -38,7 +38,7 @@ const getShippingFee = async (req, res) => {
 }
 
 const createOrder = async (req, res) => {
-    const userId = req.user.id; // Lấy ID người dùng từ token
+    const userId = req.user.id;
     const {
         order,
         orderItems,
@@ -109,6 +109,9 @@ const getOrders = async (req, res) => {
         const ordersData = await Promise.all(orders.map(async (order) => {
             const firstOrderItem = order.orderItems[0];
 
+            const totalQuantity = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
+            const productSamplesCount = order.orderItems.length;
+
             const productData = firstOrderItem ? {
                 size: firstOrderItem.size.sizeNumber,
                 shoes: firstOrderItem.size.classification.shoes.name,
@@ -128,6 +131,8 @@ const getOrders = async (req, res) => {
                 status: order.status,
                 createdAt: order.createdAt,
                 firstOrderItem: productData,
+                totalQuantity: totalQuantity,
+                productSamplesCount: productSamplesCount
             };
         }));
 
@@ -158,9 +163,8 @@ const getOrders = async (req, res) => {
 };
 
 const getOrderById = async (req, res) => {
-    const orderId = req.params.id; // Lấy orderId từ tham số URL
+    const orderId = req.params.id;
     try {
-        // Tìm kiếm đơn hàng theo orderId và chỉ định các trường cần lấy
         const order = await Order.findById(orderId)
             .select('_id clientOrderCode shippingAddress orderItems weight codAmount shippingFee content isFreeShip isPayment note status statusTimestamps returnInfo')
             .populate({
@@ -197,7 +201,6 @@ const getOrderById = async (req, res) => {
             };
         }));
 
-        // Chuẩn bị dữ liệu phản hồi
         const orderDetails = {
             id: order._id,
             clientOrderCode: order.clientOrderCode,
@@ -210,7 +213,7 @@ const getOrderById = async (req, res) => {
             isPayment: order.isPayment,
             note: order.note,
             status: order.status,
-            statusTimestamps: order.statusTimestamps, // Lấy statusTimestamps
+            statusTimestamps: order.statusTimestamps,
             returnInfo: order.returnInfo,
             orderItems: productsData,
         };
@@ -227,43 +230,36 @@ const getOrderById = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
     const {newStatus} = req.body;
 
-    // Chỉ cho phép các trạng thái được xác định
-    const allowedStatuses = [orderStatus.confirmed, orderStatus.cancelled, orderStatus.returned];
+    const allowedStatuses = [orderStatus.confirmed, orderStatus.cancelled];
 
-    // Kiểm tra trạng thái mới
     if (!newStatus || !allowedStatuses.includes(newStatus)) {
         return res.status(badRequestResponse.code)
             .json(responseBody(badRequestResponse.status, 'Invalid status'));
     }
 
     try {
-        // Tìm đơn hàng
         const order = await Order.findById(req.params.id).populate('orderItems.shoes');
 
-        // Kiểm tra nếu đơn hàng không tồn tại
         if (!order) {
             return res.status(notFoundResponse.code)
                 .json(responseBody(notFoundResponse.status, 'Order not found'));
         }
 
-        // Tạo mới bản ghi Statistical nếu trạng thái mới là confirmed
         if (newStatus === orderStatus.confirmed) {
             for (const item of order.orderItems) {
                 await createStatistical(item.shoes, item.quantity, item.price);
             }
         }
 
-        // Tìm và cập nhật trạng thái đơn hàng
         const updatedOrder = await Order.findByIdAndUpdate(
             req.params.id,
             {
                 status: newStatus,
-                [`statusTimestamps.${newStatus}`]: new Date(), // Cập nhật thời gian cho trạng thái mới
+                [`statusTimestamps.${newStatus}`]: new Date(),
             },
-            {new: true} // Trả về tài liệu đã cập nhật
+            {new: true}
         );
 
-        // Trả về phản hồi thành công
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Order status updated successfully', updatedOrder));
     } catch (error) {
@@ -301,54 +297,46 @@ const deleteOrder = async (req, res) => {
     }
 };
 
+const returnOrder = async (req, res) => {
+    const orderId = req.params.id;
+    const {reason} = req.body;
+    try {
+        const order = await Order.findById(orderId)
+            .select('_id');
+
+        if (!order) {
+            return res.status(notFoundResponse.code)
+                .json(responseBody(notFoundResponse.status, 'Order not found'));
+        }
+
+        const updateOrder = await Order.findByIdAndUpdate(
+            order._id,
+            {
+                returnInfo: {
+                    reason: reason,
+                    status: orderStatus.pending,
+                    ['statusTimestamps.pending']: new Date(),
+                }
+            },
+            {new: true}
+        );
+
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status, 'Order status updated successfully', updateOrder));
+    } catch (error) {
+        console.log(`returnOrder Error: ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+}
+
 export default {
     getShippingFee,
     createOrder,
     getOrders,
     getOrderById,
     updateOrderStatus,
-    deleteOrder
+    deleteOrder,
+    returnOrder
 }
-
-// import cron from 'node-cron';
-//
-// // Thiết lập cron job chạy mỗi 10 phút
-// cron.schedule('*/10 * * * *', async () => {
-//     const orders = await Order.find({ status: { $ne: 'delivered' } }); // Lấy các đơn hàng chưa giao
-//     orders.forEach(order => {
-//         updateOrderStatus(order.orderID); // Cập nhật trạng thái cho từng đơn hàng
-//     });
-// });
-
-// const updateOrderStatus = async (orderID) => {
-//     try {
-//         // Lấy trạng thái từ GHTK
-//         const ghtkData = await getOrderStatusFromGHTK(orderID);
-//
-//         // Giả sử ghtkData có trường status để cập nhật
-//         const ghtkStatus = ghtkData.status; // Cần điều chỉnh theo cấu trúc dữ liệu của bạn
-//
-//         // Cập nhật vào cơ sở dữ liệu MongoDB
-//         await Order.updateOne(
-//             { orderID: orderID },
-//             { status: ghtkStatus }
-//         );
-//
-//         console.log(`Order status updated to: ${ghtkStatus}`);
-//     } catch (error) {
-//         console.error('Error updating order status:', error);
-//     }
-// };
-
-// const updateReturnStatus = async (req, res) => {
-//     const { orderId, newReturnStatus } = req.body;
-//
-//     // Kiểm tra trạng thái hoàn trả mới
-//     if (!newReturnStatus || !Object.values(returnOrderStatus).includes(newReturnStatus)) {
-//         return res.status(badRequestResponse.code)
-//             .json(responseBody(badRequestResponse.status, 'Invalid return status'));
-//     }
-//
-//     // Logic cập nhật trạng thái hoàn trả
-// }
 
