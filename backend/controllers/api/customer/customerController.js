@@ -17,13 +17,14 @@ import argon2 from "argon2";
 const maxAge = 86400;
 
 const responseData = async (id, res) => {
-    const customer = await Customer.findById(userId)
+    const customer = await Customer.findById(id)
         .select('firstName lastName email avatar birthDay phone')
         .lean();
 
     if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
     const customerData = {...customer};
     if (customerData.avatar) customerData.avatar = await getSingleImage(`${customerDir}/${avatarDir}`, customerData.avatar, maxAge);
+    return customerData
 }
 
 const getProfile = async (req, res) => {
