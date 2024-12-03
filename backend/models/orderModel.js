@@ -95,16 +95,18 @@ const OrderSchema = new mongoose.Schema({
     },
     returnInfo: {
         reason: {type: String}, // Lý do hoàn trả (ví dụ: sản phẩm bị lỗi, không đúng mô tả, không còn nhu cầu,...)
-        returnDate: {type: Date}, // Ngày hoàn trả (ngày mà đơn hàng được hoàn trả)
         status: {
             type: String,
             enum: [
+                'pending', // Quá trình chờ xác nhận yêu cầu hoàn trả
                 'initiated', // - 'initiated': Quá trình hoàn trả đã bắt đầu nhưng chưa hoàn tất
                 'completed',// - 'completed': Quá trình hoàn trả đã hoàn tất, sản phẩm đã được trả về
-                'refunded'// - 'refunded': Tiền đã được hoàn lại cho khách hàng sau khi hoàn trả thành công
-            ],
+                'refunded',// - 'refunded': Tiền đã được hoàn lại cho khách hàng sau khi hoàn trả thành công
+                'cancelled' // Không chap nhạn hoàn tra
+            ]
         },
         statusTimestamps: {
+            pending:{type:Date},// Thời gian gưi yêu  cầu hoàn hàng
             initiated: {type: Date}, // Thời gian khi trạng thái 'initiated'
             completed: {type: Date}, // Thời gian khi trạng thái 'completed'
             refunded: {type: Date}    // Thời gian khi trạng thái 'refunded'

@@ -2323,7 +2323,6 @@ router.get('/orders/:id', orderController.getOrderById);
  *       Chỉ cho phép cập nhật các trạng thái:
  *       - **confirmed**: Đơn hàng đã được khách hàng xác nhận đã nhận.
  *       - **cancelled**: Đơn hàng đã bị hủy.
- *       - **returned**: Đơn hàng đã được trả lại.
  *       Nếu đơn hàng không tồn tại, trả về lỗi.
  *     security:
  *       - bearerAuth: []
@@ -2347,7 +2346,6 @@ router.get('/orders/:id', orderController.getOrderById);
  *                 description: # Trạng thái mới của đơn hàng. Có thể là:
  *                              #- **confirmed**
  *                              #- **cancelled**
- *                              #- **returned**
  *             required:
  *               - newStatus
  *     responses:
@@ -3355,5 +3353,105 @@ router.get('/notifications', notificationController.getNotifications);
  *                   example: Server error
  */
 router.delete('/notifications/:id', notificationController.deleteNotification);
+
+/**
+ * @swagger
+ * /v1/orders/return/{id}:
+ *   patch:
+ *     summary: Request to return an order
+ *     description: Updates the return information for a specific order, including the reason for the return and sets the initial status to "pending".
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the order to be returned.
+ *       - in: body
+ *         name: body
+ *         description: Reason for returning the order.
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             reason:
+ *               type: string
+ *               description: The reason for returning the order.
+ *               example: "Product was defective."
+ *     responses:
+ *       200:
+ *         description: Order status updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   description: Response status.
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   description: Response message.
+ *                   example: Order status updated successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       description: ID of the updated order.
+ *                       example: "64a3f8b2b6a2a9a08c98c34b"
+ *                     returnInfo:
+ *                       type: object
+ *                       description: Return information.
+ *                       properties:
+ *                         reason:
+ *                           type: string
+ *                           description: Reason for returning the order.
+ *                           example: "Product was defective."
+ *                         status:
+ *                           type: string
+ *                           description: Return status.
+ *                           example: "pending"
+ *                         statusTimestamps:
+ *                           type: object
+ *                           properties:
+ *                             pending:
+ *                               type: string
+ *                               format: date-time
+ *                               description: Timestamp when the return was initiated.
+ *                               example: "2024-12-03T12:34:56.789Z"
+ *       404:
+ *         description: Order not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   description: Response status.
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   description: Error message.
+ *                   example: Order not found
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   description: Response status.
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   description: Error message.
+ *                   example: Server error
+ */
+router.patch('/orders/return/:id',orderController.returnOrder);
 
 export default router;
