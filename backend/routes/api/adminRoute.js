@@ -51,6 +51,7 @@ router.patch('/v1/sizes/:id', sizeController.updateSize);
 router.get('/v1/orders', orderController.getOrders);
 router.get('/v1/orders/:id', orderController.getOrderById);
 router.patch('/v1/orders/:id', orderController.updateOrderStatus);
+router.patch('/v1/orders/return/:id',orderController.updateOrderReturnInfo);
 
 router.get('/v1/statistical/bestseller',statisticalController.getTop5)
 router.get('/v1/statistical/day',statisticalController.getStatisticalByTimePeriod)

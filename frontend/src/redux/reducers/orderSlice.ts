@@ -61,9 +61,9 @@ interface StatusTimestamps {
 
 interface ReturnInfo {
     reason: string;
-    returnDate: string;
     status: string;
     statusTimestamps: {
+        pending: string,
         initiated: string,
         completed: string,
         refunded: string
@@ -108,9 +108,11 @@ interface OrderState {
     fetchAllStatus: string;
     fetchStatus: string;
     updateStatus: string;
+    updateReturnInfoStatus: string;
     fetchAllError: string | null;
     fetchError: string | null;
     updateError: { code: number, error: string } | null;
+    updateReturnInfoError: { code: number, error: string } | null;
 }
 
 const initialState: OrderState = {
@@ -121,9 +123,11 @@ const initialState: OrderState = {
     fetchAllStatus: stateStatus.idleState,
     fetchStatus: stateStatus.idleState,
     updateStatus: stateStatus.idleState,
+    updateReturnInfoStatus: stateStatus.idleState,
     fetchAllError: null,
     fetchError: null,
-    updateError: null
+    updateError: null,
+    updateReturnInfoError: null
 }
 
 export const fetchOrders = createAsyncThunk(
@@ -178,6 +182,34 @@ export const updateOrder = createAsyncThunk<Order, {
     }
 )
 
+export const updateOrderReturnInfo = createAsyncThunk<Order, {
+    id: string;
+    newReturnStatus: string;
+}, {
+    rejectValue: { code: number, error: string }
+}>(
+    'orders/updateOrderReturnInfo',
+    async ({id, newReturnStatus}, {rejectWithValue}) => {
+        try {
+            const response = await axiosClient.patch(`${orderApi.returnOrder}/${id}`, {
+                newReturnStatus: newReturnStatus
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            if (response.status === 200) {
+                return response.data.data;
+            } else {
+                return rejectWithValue({code: response.status, error: response.data.message});
+            }
+        } catch (error: any) {
+            return rejectWithValue({code: 500, error: error.message || 'Sự cố không xác định'});
+        }
+    }
+)
+
 const orderSlice = createSlice({
     name: 'orders',
     initialState,
@@ -188,6 +220,10 @@ const orderSlice = createSlice({
         resetOrderUpdateStatus(state) {
             state.updateStatus = stateStatus.idleState
             state.updateError = null;
+        },
+        resetUpdateReturnInfoStatus(state) {
+            state.updateReturnInfoStatus = stateStatus.idleState
+            state.updateReturnInfoError = null;
         }
     },
     extraReducers: (builder) => {
@@ -246,13 +282,31 @@ const orderSlice = createSlice({
             .addCase(updateOrder.rejected, (state, action) => {
                 state.updateStatus = stateStatus.failedState;
                 state.updateError = action.payload || {code: 500, error: 'Sự cố không xác định'};
+            });
+
+        // Quản lý trạng thái cho updateOrderReturnInfo
+        builder
+            .addCase(updateOrderReturnInfo.pending, (state) => {
+                state.updateReturnInfoStatus = stateStatus.loadingState;
+                state.updateReturnInfoError = null
+            })
+            .addCase(updateOrderReturnInfo.fulfilled, (state, action) => {
+                state.updateReturnInfoStatus = stateStatus.succeededState;
+                const index = state.orders.findIndex(order => order._id === action.payload._id);
+                if (index !== -1) state.orders[index] = action.payload;
+                state.updateReturnInfoError = null;
+            })
+            .addCase(updateOrderReturnInfo.rejected, (state, action) => {
+                state.updateReturnInfoStatus = stateStatus.failedState;
+                state.updateReturnInfoError = action.payload || {code: 500, error: 'Sự cố không xác định'};
             })
     }
 });
 
 export const {
     setOrderDetailId,
-    resetOrderUpdateStatus
+    resetOrderUpdateStatus,
+    resetUpdateReturnInfoStatus
 } = orderSlice.actions;
 
 export default orderSlice.reducer;
