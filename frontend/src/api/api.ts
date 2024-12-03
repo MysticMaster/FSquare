@@ -41,3 +41,9 @@ export const orderApi = {
     get: "/api/admin/v1/orders",
     update: "/api/admin/v1/orders"
 }
+
+export const statisticalApi={
+    getTop5: "/api/admin/v1/statistical/bestseller",
+    getDay: "/api/admin/v1/statistical/day",
+    getYear: "/api/admin/v1/statistical/year",
+}

@@ -9,6 +9,7 @@ import ShoesPage from "./ShoesPage.tsx";
 import '../styles.scss'
 import DetailContainer from "../components/container/DetailContainer.tsx";
 import OrderPage from "./OrderPage.tsx";
+import StatisticalPage from "./StatisticalPage.tsx";
 
 const HomePage: React.FC = () => {
     const [activeItem, setActiveItem] = useState<string | null>('dashboard');
@@ -55,6 +56,8 @@ const HomePage: React.FC = () => {
                 return <ShoesPage/>; // Nội dung cho Quản lý danh mục
             case 'orders':
                 return <OrderPage/>; // Nội dung cho Quản lý danh mục
+            case 'statistical':
+                return <StatisticalPage/>; // Nội dung cho Thống kê
             default:
                 return (
                     <div>

@@ -64,7 +64,12 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
     const [buttonTitle, setButtonTitle] = useState<string | null>('');
     const [newStatus, setNewStatus] = useState<string | null>('');
 
-    const isLoading = updateStatus === stateStatus.loadingState;
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (updateStatus === stateStatus.loadingState) setIsLoading(true)
+        else setIsLoading(false)
+    }, [updateStatus]);
 
     useEffect(() => {
         dispatch(fetchOrder({id}));
@@ -127,7 +132,7 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
     useEffect(() => {
         if (updateStatus === stateStatus.succeededState) {
             handleUpdateSuccess()
-        }else {
+        } else {
             dispatch(resetOrderUpdateStatus())
         }
     }, [updateStatus]);
