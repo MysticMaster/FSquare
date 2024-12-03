@@ -39,7 +39,8 @@ export const sizeApi = {
 }
 export const orderApi = {
     get: "/api/admin/v1/orders",
-    update: "/api/admin/v1/orders"
+    update: "/api/admin/v1/orders",
+    returnOrder: "/api/admin/v1/orders/return"
 }
 
 export const statisticalApi={

@@ -31,6 +31,8 @@ const responseData = async (id, res) => {
         shippingAddress: order.shippingAddress,
         orderItems: order.orderItems.length,
         weight: order.weight,
+        isFreeShip: order.isFreeShip,
+        isPayment: order.isPayment,
         codAmount: order.codAmount,
         shippingFee: order.shippingFee,
         status: order.status,
@@ -74,6 +76,7 @@ const getOrders = async (req, res) => {
                 orderItems: order.orderItems.length,
                 weight: order.weight,
                 codAmount: order.codAmount,
+                isPayment: order.isPayment,
                 shippingFee: order.shippingFee,
                 status: order.status,
                 createdAt: order.createdAt,
@@ -187,7 +190,6 @@ const getOrderById = async (req, res) => {
     }
 };
 
-
 const updateOrderStatus = async (req, res) => {
     const {newStatus} = req.body;
 
@@ -294,10 +296,50 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
+const updateOrderReturnInfo = async (req, res) => {
+    const orderId = req.params.id;
+    const {newReturnStatus} = req.body;
+    const allowedStatuses = ['initiated', 'completed', 'refunded', 'cancelled'];
+
+    if (!newReturnStatus || !allowedStatuses.includes(newReturnStatus)) {
+        return res.status(badRequestResponse.code)
+            .json(responseBody(badRequestResponse.status, 'Invalid status'));
+    }
+
+    try {
+        const order = await Order.findById(orderId)
+            .select('_id');
+
+        if (!order) {
+            return res.status(notFoundResponse.code)
+                .json(responseBody(notFoundResponse.status, 'Order not found'));
+        }
+
+        const updateOrder = await Order.findByIdAndUpdate(
+            order._id,
+            {
+                returnInfo: {
+                    status: newReturnStatus,
+                    [`statusTimestamps.${newReturnStatus}`]: new Date(),
+                }
+            },
+            {new: true}
+        );
+        const orderData = await responseData(updateOrder._id, res);
+        res.status(successResponse.code)
+            .json(responseBody(successResponse.status, 'Order status updated successfully', orderData));
+    } catch (error) {
+        console.log(`returnOrder Error: ${error.message}`);
+        res.status(internalServerErrorResponse.code)
+            .json(responseBody(internalServerErrorResponse.status, 'Server error'));
+    }
+}
+
 export default {
     getOrders,
     getOrderById,
-    updateOrderStatus
+    updateOrderStatus,
+    updateOrderReturnInfo
 }
 
 // const updateReturnStatus = async (req, res) => {

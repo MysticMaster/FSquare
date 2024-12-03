@@ -47,7 +47,7 @@ const orderStatusMapping: Record<string, string> = {
     delivered: "Đã giao khách hàng",
     confirmed: "Đã nhận hàng",
     cancelled: "Đã hủy",
-    returned: "Đã trả lại",
+    returned: "Hoàn trả",
 };
 
 const getStatusClass = (status: string): string => {
