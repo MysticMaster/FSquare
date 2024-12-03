@@ -7,6 +7,7 @@ import shoesController from "../../controllers/api/admin/shoesController.js";
 import classificationController from "../../controllers/api/admin/classificationController.js";
 import sizeController from "../../controllers/api/admin/sizeController.js";
 import orderController from "../../controllers/api/admin/orderController.js";
+import statisticalController from "../../controllers/api/admin/statisticalController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -50,5 +51,9 @@ router.patch('/v1/sizes/:id', sizeController.updateSize);
 router.get('/v1/orders', orderController.getOrders);
 router.get('/v1/orders/:id', orderController.getOrderById);
 router.patch('/v1/orders/:id', orderController.updateOrderStatus);
+
+router.get('/v1/statistical/bestseller',statisticalController.getTop5)
+router.get('/v1/statistical/day',statisticalController.getStatisticalByTimePeriod)
+router.get('/v1/statistical/year',statisticalController.getStatisticalByYear)
 
 export default router;

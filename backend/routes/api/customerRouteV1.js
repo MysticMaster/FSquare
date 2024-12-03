@@ -14,6 +14,7 @@ import sizeController from "../../controllers/api/customer/sizeController.js";
 import paymentController from "../../controllers/api/customer/paymentController.js";
 import shoesReviewController from "../../controllers/api/customer/shoesReviewController.js";
 import statisticalController from "../../controllers/api/customer/statisticalController.js";
+import notificationController from "../../controllers/api/customer/notificationController.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -3188,5 +3189,171 @@ router.post('/reviews', upload.array('files', 5), shoesReviewController.createSh
 router.get('/reviews/shoes/:id', shoesReviewController.getReviewByShoesId);
 
 router.get('/statistical', statisticalController.getTop5);
+
+/**
+ * @swagger
+ * /v1/notifications:
+ *   get:
+ *     summary: Get notifications for a user
+ *     description: Fetches notifications for the currently authenticated user based on their user ID with pagination support.
+ *     parameters:
+ *       - in: query
+ *         name: size
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           example: 5
+ *         description: The number of notifications per page (default is 5)
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *         description: The page number to retrieve (default is 1)
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *           example: 'order'
+ *         description: Search term for filtering notifications by title (optional)
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved notifications with pagination
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Get Notifications Successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     notifications:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: 5f4e6c4f7b4f8c1b2c8c9b1f
+ *                           order:
+ *                             type: string
+ *                             example: 123456789
+ *                           title:
+ *                             type: string
+ *                             example: Order Confirmation
+ *                           content:
+ *                             type: string
+ *                             example: Your order has been confirmed and is being processed.
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                             example: 2024-12-01T14:12:47.149+00:00
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         size:
+ *                           type: integer
+ *                           example: 5
+ *                         page:
+ *                           type: integer
+ *                           example: 1
+ *                         totalItems:
+ *                           type: integer
+ *                           example: 50
+ *                         totalPages:
+ *                           type: integer
+ *                           example: 10
+ *                         hasNextPage:
+ *                           type: boolean
+ *                           example: true
+ *                         hasPreviousPage:
+ *                           type: boolean
+ *                           example: false
+ *                         nextPage:
+ *                           type: integer
+ *                           example: 2
+ *                         prevPage:
+ *                           type: integer
+ *                           example: null
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.get('/notifications', notificationController.getNotifications);
+
+/**
+ * @swagger
+ * /v1/notifications/{id}:
+ *   delete:
+ *     summary: Delete a notification by its ID
+ *     description: Deletes a notification for the currently authenticated user by the provided notification ID.
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: The ID of the notification to be deleted
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 5f4e6c4f7b4f8c1b2c8c9b1f
+ *     responses:
+ *       200:
+ *         description: Successfully deleted the notification
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Delete Notification Successfully
+ *       404:
+ *         description: Notification not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Notify not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Server error
+ */
+router.delete('/notifications/:id', notificationController.deleteNotification);
 
 export default router;
