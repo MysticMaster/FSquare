@@ -75,7 +75,8 @@ const ShoesTable: React.FC = () => {
     };
 
     const handleSearchChange = (search: string) => {
-        setSearchTerm(search);
+        const sanitizedSearch = search.trim().replace(/\s+/g, ' ');
+        setSearchTerm(sanitizedSearch);
         setCurrentPage(1);
     };
 

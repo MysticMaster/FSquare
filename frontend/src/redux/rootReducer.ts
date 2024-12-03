@@ -6,6 +6,7 @@ import shoesSlice from "./reducers/shoesSlice.ts";
 import classificationSlice from "./reducers/classificationSlice.ts";
 import sizeSlice from "./reducers/sizeSlice.ts";
 import orderSlice from "./reducers/orderSlice.ts";
+import statisticalSlice from "./reducers/statisticalSlice.ts";
 
 const rootReducer = combineReducers({
     auth: authSlice,
@@ -14,7 +15,8 @@ const rootReducer = combineReducers({
     shoes: shoesSlice,
     classifications: classificationSlice,
     sizes: sizeSlice,
-    orders: orderSlice
+    orders: orderSlice,
+    statistical: statisticalSlice,
 });
 
 export default rootReducer;

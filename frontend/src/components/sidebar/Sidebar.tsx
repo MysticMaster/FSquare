@@ -1,5 +1,7 @@
 import React from 'react';
-import {HiArrowSmRight, HiChartPie, HiShoppingBag, HiViewBoards} from "react-icons/hi";
+import {HiArrowSmRight, HiChartPie, HiViewBoards} from "react-icons/hi";
+import { BiSolidCategory } from "react-icons/bi";
+import {FaChartLine,FaShoppingCart } from "react-icons/fa";
 import HiddenSwitch from "../button/HiddenSwitch.tsx";
 import SidebarItem from "./SidebarItem.tsx";
 import {useDispatch} from "react-redux";
@@ -44,7 +46,7 @@ const CustomSidebar: React.FC<CustomSidebarProps> = ({activeItem, onItemClick, t
                 />
                 <SidebarItem
                     item="Quản lý danh mục"
-                    icon={<HiViewBoards className="mr-2"/>}
+                    icon={<BiSolidCategory  className="mr-2"/>}
                     active={activeItem === 'category'}
                     onClick={() => {
                         onItemClick('category')
@@ -53,7 +55,7 @@ const CustomSidebar: React.FC<CustomSidebarProps> = ({activeItem, onItemClick, t
                 />
                 <SidebarItem
                     item="Quản lý thương hiệu"
-                    icon={<HiViewBoards className="mr-2"/>}
+                    icon={<BiSolidCategory className="mr-2"/>}
                     active={activeItem === 'brand'}
                     onClick={() => {
                         onItemClick('brand')
@@ -71,10 +73,19 @@ const CustomSidebar: React.FC<CustomSidebarProps> = ({activeItem, onItemClick, t
                 />
                 <SidebarItem
                     item="Đơn hàng"
-                    icon={<HiShoppingBag className="mr-2"/>}
+                    icon={<FaShoppingCart className="mr-2"/>}
                     active={activeItem === 'orders'}
                     onClick={() => {
                         onItemClick('orders')
+                        handleClose()
+                    }}
+                />
+                <SidebarItem
+                    item="Thống kê"
+                    icon={<FaChartLine className="mr-2"/>}
+                    active={activeItem === 'statistical'}
+                    onClick={() => {
+                        onItemClick('statistical')
                         handleClose()
                     }}
                 />

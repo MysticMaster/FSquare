@@ -16,16 +16,20 @@ import argon2 from "argon2";
 
 const maxAge = 86400;
 
+const responseData = async (id, res) => {
+    const customer = await Customer.findById(userId)
+        .select('firstName lastName email avatar birthDay phone')
+        .lean();
+
+    if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
+    const customerData = {...customer};
+    if (customerData.avatar) customerData.avatar = await getSingleImage(`${customerDir}/${avatarDir}`, customerData.avatar, maxAge);
+}
+
 const getProfile = async (req, res) => {
     const userId = req.user.id;
     try {
-        const customer = await Customer.findById(userId)
-            .select('firstName lastName email avatar birthDay phone')
-            .lean();
-
-        if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
-        const customerData = {...customer};
-        if (customerData.avatar) customerData.avatar = await getSingleImage(`${customerDir}/${avatarDir}`, customerData.avatar, maxAge);
+        const customerData = await responseData(userId, res);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get profile successful',
@@ -43,7 +47,7 @@ const updateProfile = async (req, res) => {
     const {firstName, lastName, birthDay, phone, fcmToken} = req.body;
     try {
         const customer = await Customer.findById(userId)
-            .select('firstName lastName avatar birthDay phone fcmToken');
+            .select('_id firstName lastName avatar birthDay phone fcmToken');
         if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
         if (firstName && firstName !== '') customer.firstName = firstName;
         if (lastName && lastName !== '') customer.lastName = lastName;
@@ -59,10 +63,12 @@ const updateProfile = async (req, res) => {
             }
         }
         await customer.save();
+
+        const customerData = await responseData(customer._id, res);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Update Profile Successful',
-                customer
+                customerData
             ));
     } catch (error) {
         console.log(`updateProfile ${error.message}`);
@@ -73,7 +79,7 @@ const updateProfile = async (req, res) => {
 
 const addAddress = async (req, res) => {
     const userId = req.user.id;
-    const {title,address, wardName, districtName, provinceName} = req.body;
+    const {title, address, wardName, districtName, provinceName} = req.body;
     if (!address || !wardName || !districtName || !provinceName) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'All fields are required'));
     try {
         const customer = await Customer.findById(userId)
@@ -81,11 +87,11 @@ const addAddress = async (req, res) => {
         if (!customer) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Account not found'));
 
         const newAddress = {
-            title:title,
-            address:address,
-            wardName:wardName,
-            districtName:districtName,
-            provinceName:provinceName,
+            title: title,
+            address: address,
+            wardName: wardName,
+            districtName: districtName,
+            provinceName: provinceName,
             isDefault: customer.address.length === 0 // Đặt isDefault là true nếu đây là địa chỉ đầu tiên
         };
 
@@ -127,7 +133,7 @@ const updateAddress = async (req, res) => {
     const userId = req.user.id;
     const addressId = req.params.id;
     if (!addressId) return res.status(badRequestResponse.code).json(responseBody(badRequestResponse.status, 'Address ID is required'));
-    const {title,address, wardName, districtName, provinceName, isDefault} = req.body;
+    const {title, address, wardName, districtName, provinceName, isDefault} = req.body;
 
     try {
         const customer = await Customer.findById(userId).select('address');
@@ -177,7 +183,7 @@ const deleteAddress = async (req, res) => {
         const addressItem = customer.address.id(addressId);
         if (!addressItem) return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Address not found'));
 
-        customer.address.pull({ _id: addressId });
+        customer.address.pull({_id: addressId});
 
         await customer.save();
         res.status(successResponse.code)
