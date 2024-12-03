@@ -5,7 +5,7 @@ import {
     notFoundResponse,
     conflictResponse,
     successResponse,
-    createdResponse, internalServerErrorResponse, forbiddenResponse
+    internalServerErrorResponse,
 } from "../../../utils/httpStatusCode.js";
 import {getSingleImage, putSingleImage} from "../../../utils/media.js";
 import {deleteObjectCommand} from "../../../config/aswS3.js";
@@ -93,7 +93,7 @@ const addAddress = async (req, res) => {
             wardName: wardName,
             districtName: districtName,
             provinceName: provinceName,
-            isDefault: customer.address.length === 0 // Đặt isDefault là true nếu đây là địa chỉ đầu tiên
+            isDefault: customer.address.length === 0
         };
 
         customer.address.push(newAddress);
