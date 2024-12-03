@@ -18,10 +18,6 @@ const StatisticalPage: React.FC = () => {
     const statisticalYear = useSelector((state: RootState) => state.statistical.statisticalYear);
 
     const fetchDayStatus = useSelector((state: RootState) => state.statistical.fetchDayStatus);
-    const fetchDayError = useSelector((state: RootState) => state.statistical.fetchDayError);
-
-    const fetchYearStatus = useSelector((state: RootState) => state.statistical.fetchYearStatus);
-    const fetchYearError = useSelector((state: RootState) => state.statistical.fetchYearError);
 
     const today = new Date();
     const currentYear = today.getFullYear();
