@@ -1598,13 +1598,6 @@ router.post('/histories', searchHistoryController.createHistory);
  *     description: Trả về danh sách các mục lịch sử tìm kiếm của người dùng, được sắp xếp theo thứ tự mới nhất.
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *      - in: header
- *         name: Authorization
- *         required: true
- *         schema:
- *           type: string
- *         description: Bearer token để xác thực người dùng.
  *     responses:
  *       200:
  *         description: Danh sách lịch sử tìm kiếm đã được lấy thành công.
@@ -2947,13 +2940,13 @@ router.post('/payments/detail', paymentController.checkPayment);
  * /v1/reviews:
  *   post:
  *     summary: "Create a shoes review"
- *     description: "Ảnh, video thì gửi lên với tag là files, giới hạn 5 cai tất cả."
+ *     description: "Allows customers to create a review for shoes, with an optional upload of up to 5 files (images or videos)."
  *     security:
  *       - BearerAuth: []  # Assuming you use Bearer token for authentication
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -2969,6 +2962,12 @@ router.post('/payments/detail', paymentController.checkPayment);
  *                 type: string
  *                 description: "The content of the review."
  *                 example: "Great shoes, very comfortable!"
+ *               files:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: "An array of files (images or videos) related to the review. Maximum 5 files."
  *     responses:
  *       201:
  *         description: "Review created successfully."
@@ -3052,24 +3051,6 @@ router.post('/payments/detail', paymentController.checkPayment);
  *                 message:
  *                   type: string
  *                   example: "Server error"
- *     multipart:
- *       - name: files
- *         description: "Optional files (images/videos) related to the review."
- *         required: false
- *         content:
- *           multipart/form-data:
- *             schema:
- *               type: object
- *               properties:
- *                 files:
- *                   type: array
- *                   items:
- *                     type: string
- *                     format: binary
- *                   description: "An array of files (images or videos)."
- *             encoding:
- *               files:
- *                 contentType: multipart/form-data
  */
 router.post('/reviews', upload.array('files', 5), shoesReviewController.createShoesReview);
 
