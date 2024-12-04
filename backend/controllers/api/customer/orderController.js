@@ -9,6 +9,7 @@ import {orderPreview} from "../../../utils/ghn.js";
 import {getSingleImage} from '../../../utils/media.js';
 import {classificationDir, thumbnailDir} from '../../../utils/directory.js';
 import Statistical from "../../../models/statisticalModel.js";
+import ShoesReview from "../../../models/shoesReviewModel.js";
 
 const maxAge = 86400;
 
@@ -106,6 +107,9 @@ const getOrders = async (req, res) => {
             .limit(sizePage)
             .lean();
 
+        const orderIds = orders.map(order => order._id);
+        const reviewedOrderIds = await ShoesReview.find({ order: { $in: orderIds } }).distinct('order');
+
         const ordersData = await Promise.all(orders.map(async (order) => {
             const firstOrderItem = order.orderItems[0];
 
@@ -123,6 +127,8 @@ const getOrders = async (req, res) => {
                     : null,
             } : null;
 
+            const isReview = !reviewedOrderIds.includes(order._id.toString());
+
             return {
                 _id: order._id,
                 clientOrderCode: order.clientOrderCode,
@@ -132,7 +138,8 @@ const getOrders = async (req, res) => {
                 createdAt: order.createdAt,
                 firstOrderItem: productData,
                 totalQuantity: totalQuantity,
-                productSamplesCount: productSamplesCount
+                productSamplesCount: productSamplesCount,
+                isReview: isReview
             };
         }));
 
