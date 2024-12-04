@@ -9,6 +9,7 @@ const orderStatus = {
 }
 
 const returnOrderStatus = {
+    pending:"pending",
     initiated:"initiated",
     completed:"completed",
     refunded:"refunded"

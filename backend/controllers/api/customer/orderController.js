@@ -4,7 +4,7 @@ import {
     internalServerErrorResponse, notFoundResponse, badRequestResponse
 } from "../../../utils/httpStatusCode.js";
 import {generateString, responseBody} from "../../../utils/generate.js";
-import {orderStatus} from "../../../utils/orderStatus.js";
+import {orderStatus, returnOrderStatus} from "../../../utils/orderStatus.js";
 import {orderPreview} from "../../../utils/ghn.js";
 import {getSingleImage} from '../../../utils/media.js';
 import {classificationDir, thumbnailDir} from '../../../utils/directory.js';
@@ -325,9 +325,10 @@ const returnOrder = async (req, res) => {
         const updateOrder = await Order.findByIdAndUpdate(
             order._id,
             {
+                status: orderStatus.returned,
                 returnInfo: {
                     reason: reason,
-                    status: orderStatus.returned,
+                    status: returnOrderStatus.pending,
                     ['statusTimestamps.pending']: new Date(),
                 }
             },
