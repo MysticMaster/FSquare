@@ -327,7 +327,7 @@ const returnOrder = async (req, res) => {
             {
                 returnInfo: {
                     reason: reason,
-                    status: orderStatus.pending,
+                    status: orderStatus.returned,
                     ['statusTimestamps.pending']: new Date(),
                 }
             },
