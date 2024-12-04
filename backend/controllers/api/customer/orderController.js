@@ -192,6 +192,8 @@ const getOrderById = async (req, res) => {
             return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Order not found'));
         }
 
+        const isReview = await ShoesReview.countDocuments({ order: order._id }) === 0;
+
         const productsData = await Promise.all(order.orderItems.map(async (product) => {
             const size = product.size;
             const classification = size.classification;
@@ -223,6 +225,7 @@ const getOrderById = async (req, res) => {
             statusTimestamps: order.statusTimestamps,
             returnInfo: order.returnInfo,
             orderItems: productsData,
+            isReview: isReview
         };
 
         res.status(successResponse.code)
