@@ -196,16 +196,17 @@ const getOrderById = async (req, res) => {
 
         const isReview = await ShoesReview.countDocuments({order: order._id});
 
-        const productsData = await Promise.all(order.orderItems.map(async (product) => {
-            const size = product.size;
+        const orderItemsData = await Promise.all(order.orderItems.map(async (orderItem) => {
+            const size = orderItem.size;
             const classification = size.classification;
             const shoes = classification.shoes;
             return {
+                _id: orderItem._id,
                 size: size.sizeNumber,
                 shoes: shoes.name,
                 color: classification.color,
-                price: product.price,
-                quantity: product.quantity,
+                price: orderItem.price,
+                quantity: orderItem.quantity,
                 thumbnail: classification.thumbnail
                     ? await getSingleImage(`${classificationDir}/${thumbnailDir}`, classification.thumbnail, maxAge)
                     : null,
@@ -226,7 +227,7 @@ const getOrderById = async (req, res) => {
             status: order.status,
             statusTimestamps: order.statusTimestamps,
             returnInfo: order.returnInfo,
-            orderItems: productsData,
+            orderItems: orderItemsData,
             isReview: isReview !== 0 ? true : false
         };
 
