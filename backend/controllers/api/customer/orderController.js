@@ -108,7 +108,9 @@ const getOrders = async (req, res) => {
             .lean();
 
         const orderIds = orders.map(order => order._id);
-        const reviewedOrderIds = await ShoesReview.find({ order: { $in: orderIds } }).distinct('order');
+        const reviewedOrderIds = (await ShoesReview.find({ order: { $in: orderIds } })
+            .distinct('order'))
+            .map(id => id.toString());
 
         const ordersData = await Promise.all(orders.map(async (order) => {
             const firstOrderItem = order.orderItems[0];
@@ -127,7 +129,7 @@ const getOrders = async (req, res) => {
                     : null,
             } : null;
 
-            const isReview = !reviewedOrderIds.includes(order._id.toString());
+            const isReview = reviewedOrderIds.includes(order._id.toString());
 
             return {
                 _id: order._id,
@@ -192,7 +194,7 @@ const getOrderById = async (req, res) => {
             return res.status(notFoundResponse.code).json(responseBody(notFoundResponse.status, 'Order not found'));
         }
 
-        const isReview = await ShoesReview.countDocuments({ order: order._id }) === 0;
+        const isReview = await ShoesReview.countDocuments({order: order._id});
 
         const productsData = await Promise.all(order.orderItems.map(async (product) => {
             const size = product.size;
@@ -225,7 +227,7 @@ const getOrderById = async (req, res) => {
             statusTimestamps: order.statusTimestamps,
             returnInfo: order.returnInfo,
             orderItems: productsData,
-            isReview: isReview
+            isReview: isReview !== 0 ? true : false
         };
 
         res.status(successResponse.code)
