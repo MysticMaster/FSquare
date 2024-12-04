@@ -214,7 +214,7 @@ const getOrderById = async (req, res) => {
         }));
 
         const orderDetails = {
-            id: order._id,
+            _id: order._id,
             clientOrderCode: order.clientOrderCode,
             shippingAddress: order.shippingAddress,
             weight: order.weight,
