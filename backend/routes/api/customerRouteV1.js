@@ -1599,12 +1599,12 @@ router.post('/histories', searchHistoryController.createHistory);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: userId
+ *      - in: header
+ *         name: Authorization
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của người dùng để truy vấn lịch sử tìm kiếm của họ.
+ *         description: Bearer token để xác thực người dùng.
  *     responses:
  *       200:
  *         description: Danh sách lịch sử tìm kiếm đã được lấy thành công.
