@@ -35,11 +35,10 @@ const createShoesReview = async (req, res) => {
             return res.status(forbiddenResponse.code)
                 .json(responseBody(forbiddenResponse.status, 'You are not authorized to review this order'));
         }
-
         const shoes = orderData.orderItems.map(item => item.shoes);
 
         const shoesData = await Shoes.find({_id: {$in: shoes}}).lean();
-        if (shoesData.length !== shoes.length) {
+        if (shoesData.length === 0) {
             return res.status(notFoundResponse.code)
                 .json(responseBody(notFoundResponse.status, 'Some shoes not found'));
         }
