@@ -1,9 +1,7 @@
 import SearchHistory from "../../../models/searchHistoryModel.js";
 import {responseBody} from "../../../utils/generate.js";
 import {
-    badRequestResponse,
     notFoundResponse,
-    conflictResponse,
     successResponse,
     createdResponse, internalServerErrorResponse, forbiddenResponse, noContentResponse
 } from "../../../utils/httpStatusCode.js";

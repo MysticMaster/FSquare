@@ -25,7 +25,7 @@ const createShoesReview = async (req, res) => {
     }
 
     try {
-        const orderData = await Order.findById(order).lean();
+        const orderData = await Order.findById(order._id).lean();
         if (!orderData) {
             return res.status(notFoundResponse.code)
                 .json(responseBody(notFoundResponse.status, 'Order not found'));
