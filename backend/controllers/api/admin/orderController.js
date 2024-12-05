@@ -308,24 +308,19 @@ const updateOrderReturnInfo = async (req, res) => {
 
     try {
         const order = await Order.findById(orderId)
-            .select('_id');
+            .select('_id returnInfo');
 
         if (!order) {
             return res.status(notFoundResponse.code)
                 .json(responseBody(notFoundResponse.status, 'Order not found'));
         }
 
-        const updateOrder = await Order.findByIdAndUpdate(
-            order._id,
-            {
-                returnInfo: {
-                    status: newReturnStatus,
-                    [`statusTimestamps.${newReturnStatus}`]: new Date(),
-                }
-            },
-            {new: true}
-        );
-        const orderData = await responseData(updateOrder._id, res);
+        order.returnInfo.status = newReturnStatus;
+        order.returnInfo.statusTimestamps[newReturnStatus] = new Date();
+
+        await order.save();
+
+        const orderData = await responseData(order._id, res);
         res.status(successResponse.code)
             .json(responseBody(successResponse.status, 'Order status updated successfully', orderData));
     } catch (error) {

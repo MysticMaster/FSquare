@@ -17,13 +17,13 @@ const OrderStatusFilterSelector: React.FC<OrderStatusFilterSelectorProps> = ({ o
 
     const allItems: OrderStatusItem[] = [
         { _id: "all", name: "Tất cả", status: null },
-        { _id: "pending", name: "Đang chờ xử lý", status: "pending" },
+        { _id: "pending", name: "Chờ xử lý", status: "pending" },
         { _id: "processing", name: "Đang xử lý", status: "processing" },
         { _id: "shipped", name: "Đã giao vận chuyển", status: "shipped" },
         { _id: "delivered", name: "Đã giao hàng", status: "delivered" },
-        { _id: "confirmed", name: "Đã xác nhận", status: "confirmed" },
+        { _id: "confirmed", name: "Đã nhận hàng", status: "confirmed" },
         { _id: "cancelled", name: "Đã hủy", status: "cancelled" },
-        { _id: "returned", name: "Đã trả lại", status: "returned" },
+        { _id: "returned", name: "Hoàn trả", status: "returned" },
     ];
 
     const handleItemChange = (item: OrderStatusItem) => {

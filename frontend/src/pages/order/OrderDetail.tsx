@@ -35,12 +35,12 @@ interface ReturnStatusTimestamps {
 const formatStatusTimestamps = (statusTimestamps: StatusTimestamps) => {
     const statusLabels: { [key: string]: string } = {
         pending: "Thời gian đặt hàng",
-        processing: "Thời gian xử lý",
+        processing: "Thời gian xác nhận",
         shipped: "Thời gian giao đơn vị vận chuyển",
         delivered: "Thời gian giao cho khách",
-        confirmed: "Thời gian khách xác nhận",
+        confirmed: "Thời gian khách xác nhận đã nhận hàng",
         cancelled: "Thời gian hủy đơn",
-        returned: "Thời gian hoàn trả",
+        returned: "Thời gian yêu cầu hoàn trả",
     };
 
     return Object.entries(statusTimestamps)
@@ -59,7 +59,8 @@ const formatReturnStatusTimestamps = (returnStatusTimestamps: ReturnStatusTimest
         pending: "Thời gian gửi yêu cầu",
         initiated: "Thời gian xác nhận",
         completed: "Thời gian kiểm hàng",
-        refunded: "Thời gian hoàn tiền"
+        refunded: "Thời gian hoàn tiền",
+        cancelled: "Thời gian hủy yêu cầu"
     }
 
     return Object.entries(returnStatusTimestamps)
@@ -82,6 +83,14 @@ const orderStatusMapping: Record<string, string> = {
     cancelled: "Đã hủy",
     returned: "Hoàn trả",
 };
+
+const returnInfoStatusMapping:Record<string, string> = {
+    pending: "Chờ xử lý",
+    initiated: "Chờ hàng - kiểm hàng",
+    completed: "Đã kiểm hàng - chờ hoàn tiền",
+    refunded: "Đã hoàn tiền",
+    cancelled: "Yêu cầu đã bị hủy"
+}
 
 const ClassificationDetail: React.FC<Props> = ({id}) => {
     const dispatch = useDispatch<AppDispatch>();
@@ -347,6 +356,10 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
                     </div>
                     <div className={'w-full border border-gray-300 p-3 mt-3 rounded'}>
                         <h2 className="text-black font-semibold text-xl">Thông tin đơn hàng</h2>
+                        <p className={'text-gray-600 text-lg'}>Mã đơn hàng: <span
+                            className={'text-black font-semibold '}>
+                                {`${order ? order.clientOrderCode : 'Trống'}`}
+                            </span></p>
                         <p className={'text-gray-600 text-lg'}>Số mặt hàng: <span
                             className={'text-black font-semibold '}>
                                 {`${order && Array.isArray(order.orderItems) ? order.orderItems.length + ' mặt hàng' : 'Trống'}`}
@@ -406,7 +419,7 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
                         <thead>
                         <tr>
                             <th className="border border-gray-300 p-2">STT</th>
-                            <th className="border border-gray-300 p-2">Tên giày</th>
+                            <th className="border border-gray-300 p-2">Tên sản phẩm</th>
                             <th className="border border-gray-300 p-2">Phân loại</th>
                             <th className="border border-gray-300 p-2">Kích cỡ</th>
                             <th className="border border-gray-300 p-2">Đơn giá</th>
@@ -448,6 +461,10 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
                         order && order.returnInfo && (
                             <div className={'w-full border border-gray-300 p-3 mt-3 rounded'}>
                                 <h2 className="text-xl font-semibold mb-2 mt-2">Thông tin trả hàng</h2>
+                                <p className={'text-gray-600 text-lg'}>Trạng thái hoàn trả hiện tại: <span
+                                    className={'text-black font-semibold '}>
+                                {`${order && order.returnInfo ? returnInfoStatusMapping[order.returnInfo.status] : 'Trống'}`}
+                            </span></p>
                                 <p className={'text-gray-600 text-lg'}>Lý do hoàn trả: <span
                                     className={'text-black font-semibold '}>
                                 {`${order.returnInfo.reason ? order.returnInfo.reason : 'Trống'}`}

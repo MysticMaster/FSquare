@@ -106,10 +106,11 @@ const OrderSchema = new mongoose.Schema({
             ]
         },
         statusTimestamps: {
-            pending:{type:Date},// Thời gian gưi yêu  cầu hoàn hàng
+            pending: {type: Date},// Thời gian gưi yêu  cầu hoàn hàng
             initiated: {type: Date}, // Thời gian khi trạng thái 'initiated'
             completed: {type: Date}, // Thời gian khi trạng thái 'completed'
-            refunded: {type: Date}    // Thời gian khi trạng thái 'refunded'
+            refunded: {type: Date},
+            cancelled: {type: Date}// Thời gian khi trạng thái 'refunded'
         }
     },
     isActive: {
