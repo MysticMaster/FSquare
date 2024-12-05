@@ -6,8 +6,8 @@ import {responseBody} from "../../../utils/generate.js";
 import Shoes from "../../../models/shoesModel.js";
 import Order from "../../../models/orderModel.js";
 import ShoesReview from "../../../models/shoesReviewModel.js";
-import {getFiles, putFiles} from "../../../utils/media.js";
-import {imageDir, shoesReviewDir, videoDir} from "../../../utils/directory.js";
+import {getFiles, getSingleImage, putFiles} from "../../../utils/media.js";
+import {avatarDir, customerDir, imageDir, shoesReviewDir, videoDir} from "../../../utils/directory.js";
 
 const maxAge = 86400;
 
@@ -87,6 +87,7 @@ const getReviewByShoesId = async (req, res) => {
             const reviewData = {
                 ...review
             }
+            if (reviewData.customer.avatar) reviewData.customer.avatar = await getSingleImage(`${customerDir}/${avatarDir}`, reviewData.customer.avatar, maxAge);
             if (reviewData.images) reviewData.images = await getFiles(`${shoesReviewDir}/${imageDir}`, reviewData.images, maxAge);
             if (reviewData.videos) reviewData.videos = await getFiles(`${shoesReviewDir}/${videoDir}`, reviewData.videos, maxAge);
             return reviewData;

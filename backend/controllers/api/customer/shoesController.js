@@ -167,7 +167,6 @@ const getShoesById = async (req, res) => {
 
         const classificationCounts = await Classification.countDocuments({shoes: shoes._id})
         const salesCounts = await Statistical.countDocuments({shoes: shoes._id})
-
         const shoeData = {
             _id: shoes._id,
             name: shoes.name,
@@ -179,7 +178,7 @@ const getShoesById = async (req, res) => {
             sales: salesCounts,
             minPrice: priceRange.length > 0 ? priceRange[0].minPrice : 0,
             maxPrice: priceRange.length > 0 ? priceRange[0].maxPrice : 0,
-            rating: reviewData.length > 0 ? reviewData[0].avgRating.toFixed(1) : 0, // Kiểm tra reviewData
+            rating: reviewData.length > 0 ? reviewData[0].avgRating : 0, // Kiểm tra reviewData
             reviewCount: reviewData.length > 0 ? reviewData[0].reviewCount : 0,   // Kiểm tra reviewData
         };
 

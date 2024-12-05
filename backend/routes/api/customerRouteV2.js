@@ -5,6 +5,7 @@ import shoesController from "../../controllers/api/customer/shoesController.js";
 import classificationController from "../../controllers/api/customer/classificationController.js";
 import sizeController from "../../controllers/api/customer/sizeController.js";
 import statisticalController from "../../controllers/api/customer/statisticalController.js";
+import shoesReviewController from "../../controllers/api/customer/shoesReviewController.js";
 
 const router = express.Router();
 
@@ -689,5 +690,119 @@ router.get('/sizes/classification/:id', sizeController.getSizesByIdClassificatio
  *                   example: Server error
  */
 router.get('/statistical', statisticalController.getTop5);
+
+
+/**
+ * @swagger
+ * /v2/reviews/shoes/{id}:
+ *   get:
+ *     summary: Get reviews for a specific shoes by its ID
+ *     description: Retrieves all reviews for a specific shoes, including rating, content, images, and videos.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the shoes for which to retrieve reviews.
+ *         schema:
+ *           type: string
+ *           example: 609b6e48f6d4c3f4a6d1e831
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved the reviews for the shoes.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Get Review Successful
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: 60fbd9c8f8f9f52b8c3a4b7d
+ *                       customer:
+ *                         type: object
+ *                         properties:
+ *                           firstName:
+ *                             type: string
+ *                             example: John
+ *                           lastName:
+ *                             type: string
+ *                             example: Doe
+ *                           avatar:
+ *                             type: string
+ *                             example: https://example.com/avatar.jpg
+ *                       rating:
+ *                         type: number
+ *                         example: 4
+ *                       content:
+ *                         type: string
+ *                         example: Great shoes, very comfortable!
+ *                       images:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                           example: https://example.com/image1.jpg
+ *                       videos:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                           example: https://example.com/video1.mp4
+ *                       feedback:
+ *                         type: string
+ *                         example: Highly recommend this product!
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                         example: 2024-12-01T12:34:56Z
+ *       400:
+ *         description: Bad Request - shoesId is required.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: ShoesId is required
+ *       404:
+ *         description: No reviews found for shoes.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: No reviews found for shoes
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "Server error: error message"
+ */
+router.get('/reviews/shoes/:id', shoesReviewController.getReviewByShoesId);
 
 export default router;
