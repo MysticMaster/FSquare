@@ -72,15 +72,27 @@ const createShoesReview = async (req, res) => {
 
 const getReviewByShoesId = async (req, res) => {
     const shoesId = req.params.id;
+    const sizePage = parseInt(req.query.size, 10) || 6;
+    const currentPage = parseInt(req.query.page, 10) || 1;
     if (!shoesId) {
         return res.status(badRequestResponse.code)
             .json(responseBody(badRequestResponse.status, 'ShoesId is required'));
     }
     try {
-        const reviews = await ShoesReview.find({shoes: {$in: [shoesId]}})
+        const query = {
+            isActive: true,
+            shoes: shoesId
+        };
+
+        const totalReviews = await ShoesReview.countDocuments(query);
+        const totalPages = Math.ceil(totalReviews / sizePage);
+
+        const reviews = await ShoesReview.find(query)
+            .sort({createdAt: -1})
+            .skip((currentPage - 1) * sizePage)
+            .limit(sizePage)
             .select('_id customer rating content images videos feedback createdAt')
             .populate('customer', 'firstName lastName avatar')
-            .sort({createdAt: -1})
             .lean();
 
         const reviewsData = await Promise.all(reviews.map(async (review) => {
@@ -92,11 +104,27 @@ const getReviewByShoesId = async (req, res) => {
             if (reviewData.videos) reviewData.videos = await getFiles(`${shoesReviewDir}/${videoDir}`, reviewData.videos, maxAge);
             return reviewData;
         }));
+
+
+        const hasNextPage = currentPage < totalPages;
+        const hasPreviousPage = currentPage > 1;
+        const nextPage = hasNextPage ? currentPage + 1 : null;
+        const prevPage = hasPreviousPage ? currentPage - 1 : null;
+
         res.status(successResponse.code)
             .json(responseBody(successResponse.status,
                 'Get Review Successful',
-                reviewsData
-            ));
+                reviewsData,
+                {
+                    size: sizePage,
+                    page: currentPage,
+                    totalItems: totalReviews,
+                    totalPages: totalPages,
+                    hasNextPage: hasNextPage,
+                    hasPreviousPage: hasPreviousPage,
+                    nextPage: nextPage,
+                    prevPage: prevPage
+                }));
     } catch (error) {
         console.log(`getReviewByShoesId ${error.message}`);
         res.status(internalServerErrorResponse.code)
