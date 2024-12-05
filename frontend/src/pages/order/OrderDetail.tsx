@@ -84,7 +84,7 @@ const orderStatusMapping: Record<string, string> = {
     returned: "Hoàn trả",
 };
 
-const returnInfoStatusMapping:Record<string, string> = {
+const returnInfoStatusMapping: Record<string, string> = {
     pending: "Chờ xử lý",
     initiated: "Chờ hàng - kiểm hàng",
     completed: "Đã kiểm hàng - chờ hoàn tiền",
@@ -166,7 +166,7 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
                 break;
             }
             case 'initiated': {
-                setReturnButtonTitle('Tiến hành kiểm hàng');
+                setReturnButtonTitle('Hoàn tất kiểm hàng');
                 setNewReturnStatus('completed');
                 break;
             }
@@ -220,8 +220,16 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
                 dispatch(resetOrderUpdateStatus())
             }
         }
-        if (newReturnStatus === 'refunded') {
+        if (newReturnStatus === 'completed') {
             const isConfirmed = window.confirm("Chắc chắn hàng hóa không có vấn đề gì?");
+            if (isConfirmed) {
+                if (newReturnStatus) dispatch(updateOrderReturnInfo({id: id, newReturnStatus: newReturnStatus}));
+            } else {
+                dispatch(resetOrderUpdateStatus())
+            }
+        }
+        if (newReturnStatus === 'refunded') {
+            const isConfirmed = window.confirm(`Xác nhận đã hoàn tiền cho đơn hàng ${order ? order.clientOrderCode : ''} ?`);
             if (isConfirmed) {
                 if (newReturnStatus) dispatch(updateOrderReturnInfo({id: id, newReturnStatus: newReturnStatus}));
             } else {
