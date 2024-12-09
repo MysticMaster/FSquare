@@ -66,12 +66,11 @@ const formatReturnStatusTimestamps = (returnStatusTimestamps: ReturnStatusTimest
     return Object.entries(returnStatusTimestamps)
         .filter(([, returnTimestamp]) => returnTimestamp)
         .map(([status, returnTimestamp]) => {
-
             return {
                 label: returnStatusLabels[status] || status,
                 formatStatusTimestamps: formatDateTime(returnTimestamp, false)
             }
-        })
+        });
 }
 
 const orderStatusMapping: Record<string, string> = {
@@ -92,7 +91,7 @@ const returnInfoStatusMapping: Record<string, string> = {
     cancelled: "Yêu cầu đã bị hủy"
 }
 
-const ClassificationDetail: React.FC<Props> = ({id}) => {
+const OrderDetail: React.FC<Props> = ({id}) => {
     const dispatch = useDispatch<AppDispatch>();
     const fetchStatus = useSelector((state: RootState) => state.orders.fetchStatus);
     const fetchError = useSelector((state: RootState) => state.orders.fetchError);
@@ -196,6 +195,7 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
         const isConfirmed = window.confirm(newStatus === 'processing' ? "Chắc chắn xác nhận đơn hàng này?" :
             "Chắc chắn đơn hàng đúng yêu cầu?");
         if (isConfirmed) {
+            setIsLoading(true);
             if (newStatus) dispatch(updateOrder({id: id, newStatus: newStatus}));
         } else {
             dispatch(resetOrderUpdateStatus())
@@ -211,29 +211,41 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
         }
     }
 
+    const handleReturn = () => {
+        const isConfirmed = window.confirm("Chắc chắn hoàn đơn hàng này?");
+        if (isConfirmed) {
+            dispatch(updateOrder({id: id, newStatus: 'returned'}));
+        } else {
+            dispatch(resetOrderUpdateStatus())
+        }
+    }
+
     const handleUpdateReturnInfo = () => {
         if (newReturnStatus === 'initiated') {
             const isConfirmed = window.confirm("Chắc chắn chấp thuận yêu cầu hoàn trả này?");
             if (isConfirmed) {
+                setIsReturnLoading(true)
                 if (newReturnStatus) dispatch(updateOrderReturnInfo({id: id, newReturnStatus: newReturnStatus}));
             } else {
-                dispatch(resetOrderUpdateStatus())
+                dispatch(resetUpdateReturnInfoStatus())
             }
         }
         if (newReturnStatus === 'completed') {
             const isConfirmed = window.confirm("Chắc chắn hàng hóa không có vấn đề gì?");
             if (isConfirmed) {
+                setIsReturnLoading(true)
                 if (newReturnStatus) dispatch(updateOrderReturnInfo({id: id, newReturnStatus: newReturnStatus}));
             } else {
-                dispatch(resetOrderUpdateStatus())
+                dispatch(resetUpdateReturnInfoStatus())
             }
         }
         if (newReturnStatus === 'refunded') {
             const isConfirmed = window.confirm(`Xác nhận đã hoàn tiền cho đơn hàng ${order ? order.clientOrderCode : ''} ?`);
             if (isConfirmed) {
+                setIsReturnLoading(true)
                 if (newReturnStatus) dispatch(updateOrderReturnInfo({id: id, newReturnStatus: newReturnStatus}));
             } else {
-                dispatch(resetOrderUpdateStatus())
+                dispatch(resetUpdateReturnInfoStatus())
             }
         }
     }
@@ -503,13 +515,20 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
                             </button>
                         }
                         {
+                            currentStatus === 'delivered' &&
+                            <button onClick={handleReturn}
+                                    className={`bg-red-500 mt-1 w-1/4  text-white rounded p-2`}
+                                    disabled={isLoading}>
+                                Hoàn lại đơn hàng
+                            </button>
+                        }
+                        {
                             buttonTitle && <button onClick={handleUpdateOrder}
                                                    className={`bg-blue-500 mt-1 w-1/4 ms-5 text-white rounded p-2`}
                                                    disabled={isLoading}>
                                 {buttonTitle}
                             </button>
                         }
-
                         {
                             currentReturnStatus === 'pending' && returnButtonTitle &&
                             <button onClick={handleCancelReturn}
@@ -532,4 +551,4 @@ const ClassificationDetail: React.FC<Props> = ({id}) => {
     );
 }
 
-export default ClassificationDetail;
+export default OrderDetail;
