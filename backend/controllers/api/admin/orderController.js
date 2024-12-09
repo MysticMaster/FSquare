@@ -4,7 +4,7 @@ import {
     internalServerErrorResponse, notFoundResponse, badRequestResponse, serviceUnavailableResponse, conflictResponse
 } from "../../../utils/httpStatusCode.js";
 import {responseBody} from "../../../utils/generate.js";
-import {orderStatus} from "../../../utils/orderStatus.js";
+import {orderStatus, returnOrderStatus} from "../../../utils/orderStatus.js";
 import {createOrderInGHN, orderPreview} from "../../../utils/ghn.js";
 import {getSingleImage} from '../../../utils/media.js';
 import {classificationDir, thumbnailDir} from '../../../utils/directory.js';
@@ -193,7 +193,7 @@ const getOrderById = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
     const {newStatus} = req.body;
 
-    const allowedStatuses = [orderStatus.processing, orderStatus.cancelled, orderStatus.shipped];
+    const allowedStatuses = [orderStatus.processing, orderStatus.cancelled, orderStatus.shipped, orderStatus.returned];
 
     if (!newStatus || !allowedStatuses.includes(newStatus)) {
         return res.status(badRequestResponse.code)
@@ -260,6 +260,17 @@ const updateOrderStatus = async (req, res) => {
             }
         }
 
+        if (newStatus === orderStatus.returned) {
+            order.content = 'Đơn hàng đã hoàn lại do người nhận không nhận đơn hàng';
+            notificationTitle = 'Giao hàng thất bại';
+            notificationContent = `Đơn hàng ${order.clientOrderCode} giao thất bại do người nhận không nhận đơn hàng`;
+            order.returnInfo = {
+                reason: 'Đơn hàng đã hoàn lại do người nhận không nhận đơn hàng',
+                status: returnOrderStatus.pending,
+                ['statusTimestamps.pending']: new Date(),
+            }
+        }
+
         await order.save()
 
         const notificationTasks = [];
@@ -308,15 +319,83 @@ const updateOrderReturnInfo = async (req, res) => {
 
     try {
         const order = await Order.findById(orderId)
-            .select('_id returnInfo');
+            .select('_id customer shippingAddress clientOrderCode returnInfo orderItems')
+            .populate('customer', '_id fcmToken');
 
         if (!order) {
             return res.status(notFoundResponse.code)
                 .json(responseBody(notFoundResponse.status, 'Order not found'));
         }
 
+        let notificationTitle = '';
+        let notificationContent = '';
+
+        if (newReturnStatus === 'initiated') {
+            notificationTitle = 'Yêu cầu hoàn trả hàng đã được xác nhận';
+            notificationContent = `Đơn hàng ${order.clientOrderCode} đang chờ kiểm hàng`;
+        }
+
+        if (newReturnStatus === 'completed') {
+            notificationTitle = 'Đã kiểm hàng';
+            notificationContent = `Đơn hàng ${order.clientOrderCode} đã kiểm hàng`;
+        }
+
+        if (newReturnStatus === 'refunded') {
+            notificationTitle = 'Hoàn trả hàng thành công';
+            notificationContent = `Đơn hàng ${order.clientOrderCode} đã hoàn trả hàng thành công`;
+        }
+
+        if (newReturnStatus === 'cancelled') {
+            notificationTitle = 'Yêu cầu hoàn trả hàng đã bị hủy';
+            notificationContent = `Đơn hàng ${order.clientOrderCode} bị từ chối hoàn trả`;
+        }
+
+        if (newReturnStatus === 'completed') {
+            await Promise.all(order.orderItems.map(async (item) => {
+                const size = await Size.findById(item.size).select('_id sizeNumber quantity');
+                if (!size) {
+                    return res.status(notFoundResponse.code)
+                        .json(responseBody(notFoundResponse.status, 'Size not found'));
+                }
+                size.quantity += item.quantity;
+                await size.save();
+            }));
+        }
+
         order.returnInfo.status = newReturnStatus;
         order.returnInfo.statusTimestamps[newReturnStatus] = new Date();
+
+        const notificationTasks = [];
+
+        if (order.customer.fcmToken) {
+            notificationTasks.push(
+                sendNotification(order.customer.fcmToken, notificationTitle, notificationContent)
+            );
+        }
+
+        notificationTasks.push(
+            Notification.create({
+                customer: order.customer._id,
+                order: order._id,
+                title: notificationTitle,
+                content: notificationContent,
+            })
+        );
+
+        notificationTasks.push(
+            Notification.create({
+                customer: order.customer._id,
+                order: order._id,
+                title: notificationTitle,
+                content: notificationContent,
+            })
+        );
+
+        try {
+            await Promise.all(notificationTasks);
+        } catch (error) {
+            console.error(`Notification Error: ${error.message}`);
+        }
 
         await order.save();
 

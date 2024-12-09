@@ -108,7 +108,7 @@ const getOrders = async (req, res) => {
             .lean();
 
         const orderIds = orders.map(order => order._id);
-        const reviewedOrderIds = (await ShoesReview.find({ order: { $in: orderIds } })
+        const reviewedOrderIds = (await ShoesReview.find({order: {$in: orderIds}})
             .distinct('order'))
             .map(id => id.toString());
 
@@ -241,7 +241,7 @@ const getOrderById = async (req, res) => {
 };
 
 const updateOrderStatus = async (req, res) => {
-    const {newStatus} = req.body;
+    const {newStatus, content} = req.body;
 
     const allowedStatuses = [orderStatus.confirmed, orderStatus.cancelled];
 
@@ -264,17 +264,15 @@ const updateOrderStatus = async (req, res) => {
             }
         }
 
-        const updatedOrder = await Order.findByIdAndUpdate(
-            req.params.id,
-            {
-                status: newStatus,
-                [`statusTimestamps.${newStatus}`]: new Date(),
-            },
-            {new: true}
-        );
+        if (newStatus === orderStatus.cancelled) {
+            if (content) order.content = content
+        }
+
+        order.status = newStatus;
+        order.statusTimestamps[newStatus] = new Date();
 
         res.status(successResponse.code)
-            .json(responseBody(successResponse.status, 'Order status updated successfully', updatedOrder));
+            .json(responseBody(successResponse.status, 'Order status updated successfully', order));
     } catch (error) {
         console.log(`updateOrderStatus Error: ${error.message}`);
         res.status(internalServerErrorResponse.code)

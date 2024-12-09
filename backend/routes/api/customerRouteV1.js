@@ -3079,13 +3079,6 @@ router.get('/statistical', statisticalController.getTop5);
  *           type: integer
  *           example: 1
  *         description: The page number to retrieve (default is 1)
- *       - in: query
- *         name: search
- *         required: false
- *         schema:
- *           type: string
- *           example: 'order'
- *         description: Search term for filtering notifications by title (optional)
  *     responses:
  *       200:
  *         description: Successfully retrieved notifications with pagination
